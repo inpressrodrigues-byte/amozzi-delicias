@@ -32,6 +32,7 @@ const Settings = () => {
   });
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -62,6 +63,7 @@ const Settings = () => {
     setSaving(true);
     try {
       let logo_url = settings?.logo_url;
+      let hero_image_url = (settings as any)?.hero_image_url;
 
       if (logoFile) {
         const ext = logoFile.name.split('.').pop();
@@ -72,9 +74,18 @@ const Settings = () => {
         logo_url = urlData.publicUrl;
       }
 
+      if (heroImageFile) {
+        const ext = heroImageFile.name.split('.').pop();
+        const path = `hero-${Date.now()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from('site-assets').upload(path, heroImageFile);
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage.from('site-assets').getPublicUrl(path);
+        hero_image_url = urlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from('site_settings')
-        .update({ ...form, logo_url, delivery_zones: deliveryZones } as any)
+        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones } as any)
         .eq('id', settings!.id);
 
       if (error) throw error;
@@ -104,6 +115,17 @@ const Settings = () => {
           <CardContent className="space-y-3">
             {settings?.logo_url && <img src={settings.logo_url} alt="Logo atual" className="h-20 w-auto" />}
             <Input type="file" accept="image/*" onChange={e => setLogoFile(e.target.files?.[0] || null)} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Imagem de Fundo do Banner</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {(settings as any)?.hero_image_url && (
+              <img src={(settings as any).hero_image_url} alt="Banner atual" className="h-32 w-full object-cover rounded-lg" />
+            )}
+            <Input type="file" accept="image/*" onChange={e => setHeroImageFile(e.target.files?.[0] || null)} />
+            <p className="text-xs text-muted-foreground">Recomendado: 1920x1080 ou maior</p>
           </CardContent>
         </Card>
 

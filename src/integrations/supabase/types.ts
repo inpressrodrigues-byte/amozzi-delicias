@@ -204,6 +204,7 @@ export type Database = {
           background_color: string | null
           created_at: string
           delivery_zones: Json | null
+          hero_image_url: string | null
           hero_subtitle: string | null
           hero_title: string | null
           id: string
@@ -221,6 +222,7 @@ export type Database = {
           background_color?: string | null
           created_at?: string
           delivery_zones?: Json | null
+          hero_image_url?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
@@ -238,6 +240,7 @@ export type Database = {
           background_color?: string | null
           created_at?: string
           delivery_zones?: Json | null
+          hero_image_url?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
