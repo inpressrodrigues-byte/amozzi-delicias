@@ -75,11 +75,14 @@ const Checkout = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <span className="text-6xl block mb-4">🛒</span>
-          <p className="text-muted-foreground mb-4">Seu carrinho está vazio</p>
-          <Button onClick={() => navigate('/')} className="rounded-full">Voltar à Loja</Button>
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+        <div className="text-center p-10 bg-card rounded-2xl shadow-lg border border-border/50 max-w-sm mx-4">
+          <span className="text-7xl block mb-6">🛒</span>
+          <h2 className="font-display text-2xl font-bold text-foreground mb-2">Carrinho Vazio</h2>
+          <p className="text-muted-foreground mb-6">Você ainda não adicionou nenhum produto ao carrinho.</p>
+          <Button onClick={() => navigate('/')} className="rounded-full bg-primary hover:bg-primary/90 px-8 py-5 text-base font-bold">
+            Ver Cardápio
+          </Button>
         </div>
       </div>
     );
