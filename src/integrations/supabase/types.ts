@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty: {
+        Row: {
+          created_at: string
+          customer_whatsapp: string
+          discount_available: boolean
+          id: string
+          purchase_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_whatsapp: string
+          discount_available?: boolean
+          id?: string
+          purchase_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_whatsapp?: string
+          discount_available?: boolean
+          id?: string
+          purchase_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
@@ -257,6 +284,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_loyalty: {
+        Args: { p_whatsapp: string }
+        Returns: {
+          discount_available: boolean
+          purchase_count: number
+        }[]
+      }
+      use_loyalty_discount: { Args: { p_whatsapp: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
