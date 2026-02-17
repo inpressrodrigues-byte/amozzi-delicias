@@ -8,8 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign, FileSpreadsheet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import * as XLSX from 'xlsx';
 
 const Finances = () => {
   const queryClient = useQueryClient();
@@ -60,7 +61,43 @@ const Finances = () => {
     toast.success('Gasto excluído');
   };
 
-  // Chart data - group by month
+  const exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Receitas sheet
+    const revenueData = orders?.map(o => ({
+      'Data': new Date(o.created_at).toLocaleDateString('pt-BR'),
+      'Cliente': o.customer_name,
+      'Total (R$)': Number(o.total).toFixed(2),
+      'Status': o.status,
+    })) || [];
+    const wsRevenue = XLSX.utils.json_to_sheet(revenueData);
+    XLSX.utils.book_append_sheet(wb, wsRevenue, 'Receitas');
+
+    // Gastos sheet
+    const expenseData = expenses?.map(e => ({
+      'Data': new Date(e.date).toLocaleDateString('pt-BR'),
+      'Descrição': e.description,
+      'Categoria': e.category || 'ingrediente',
+      'Valor (R$)': Number(e.amount).toFixed(2),
+    })) || [];
+    const wsExpenses = XLSX.utils.json_to_sheet(expenseData);
+    XLSX.utils.book_append_sheet(wb, wsExpenses, 'Gastos');
+
+    // Resumo sheet
+    const summary = [
+      { 'Descrição': 'Receita Total', 'Valor (R$)': totalRevenue.toFixed(2) },
+      { 'Descrição': 'Gastos Totais', 'Valor (R$)': totalExpenses.toFixed(2) },
+      { 'Descrição': 'Lucro Líquido', 'Valor (R$)': profit.toFixed(2) },
+    ];
+    const wsSummary = XLSX.utils.json_to_sheet(summary);
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo');
+
+    XLSX.writeFile(wb, `AMOZI_Financeiro_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('Planilha exportada!');
+  };
+
+  // Chart data
   const chartData = (() => {
     const months: Record<string, { month: string; receita: number; gastos: number }> = {};
     orders?.forEach(o => {
@@ -78,7 +115,12 @@ const Finances = () => {
 
   return (
     <AdminLayout>
-      <h1 className="font-display text-3xl font-bold mb-6">Financeiro</h1>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+        <h1 className="font-display text-3xl font-bold">Financeiro</h1>
+        <Button onClick={exportToExcel} variant="outline">
+          <FileSpreadsheet className="h-4 w-4 mr-2" /> Exportar Excel
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <Card>

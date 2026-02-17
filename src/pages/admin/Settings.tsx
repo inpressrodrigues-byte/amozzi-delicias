@@ -9,7 +9,12 @@ import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Save } from 'lucide-react';
+import { Save, Plus, Trash2 } from 'lucide-react';
+
+interface DeliveryZone {
+  name: string;
+  fee: number;
+}
 
 const Settings = () => {
   const { data: settings, isLoading } = useSiteSettings();
@@ -23,7 +28,9 @@ const Settings = () => {
     secondary_color: '#E8A7B8',
     accent_color: '#C49A4A',
     background_color: '#F4F1EC',
+    instagram_url: '',
   });
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -38,9 +45,18 @@ const Settings = () => {
         secondary_color: settings.secondary_color || '#E8A7B8',
         accent_color: settings.accent_color || '#C49A4A',
         background_color: settings.background_color || '#F4F1EC',
+        instagram_url: (settings as any).instagram_url || '',
       });
+      const zones = (settings as any).delivery_zones;
+      if (Array.isArray(zones)) setDeliveryZones(zones);
     }
   }, [settings]);
+
+  const addZone = () => setDeliveryZones(prev => [...prev, { name: '', fee: 0 }]);
+  const removeZone = (i: number) => setDeliveryZones(prev => prev.filter((_, idx) => idx !== i));
+  const updateZone = (i: number, field: keyof DeliveryZone, value: string | number) => {
+    setDeliveryZones(prev => prev.map((z, idx) => idx === i ? { ...z, [field]: value } : z));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -58,7 +74,7 @@ const Settings = () => {
 
       const { error } = await supabase
         .from('site_settings')
-        .update({ ...form, logo_url })
+        .update({ ...form, logo_url, delivery_zones: deliveryZones } as any)
         .eq('id', settings!.id);
 
       if (error) throw error;
@@ -132,10 +148,49 @@ const Settings = () => {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>WhatsApp</CardTitle></CardHeader>
-          <CardContent>
-            <Label>Número do WhatsApp (com DDD)</Label>
-            <Input value={form.whatsapp_number} onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))} placeholder="5511999999999" />
+          <CardHeader><CardTitle>Contato e Redes Sociais</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Número do WhatsApp (com DDD)</Label>
+              <Input value={form.whatsapp_number} onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))} placeholder="5511999999999" />
+            </div>
+            <div>
+              <Label>Instagram (URL ou @)</Label>
+              <Input value={form.instagram_url} onChange={e => setForm(f => ({ ...f, instagram_url: e.target.value }))} placeholder="https://instagram.com/amozi ou @amozi" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Zonas de Entrega (Taxa por Bairro)</CardTitle>
+              <Button size="sm" variant="outline" onClick={addZone}><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {deliveryZones.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma zona cadastrada. Sem taxa de entrega.</p>}
+            {deliveryZones.map((zone, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  placeholder="Bairro / Região"
+                  value={zone.name}
+                  onChange={e => updateZone(i, 'name', e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Taxa R$"
+                  value={zone.fee}
+                  onChange={e => updateZone(i, 'fee', parseFloat(e.target.value) || 0)}
+                  className="w-28"
+                />
+                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeZone(i)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
