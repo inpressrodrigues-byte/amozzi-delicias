@@ -7,14 +7,14 @@ import heroBg from '@/assets/hero-bg.jpg';
 const HeroSection = () => {
   const { data: settings } = useSiteSettings();
 
+  const bgImage = (settings as any)?.hero_image_url || heroBg;
+
   return (
     <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
-      {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroBg})` }}
+        style={{ backgroundImage: `url(${bgImage})` }}
       />
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
 
       <motion.div
@@ -48,7 +48,6 @@ const HeroSection = () => {
         </Button>
       </motion.div>
 
-      {/* Scroll indicator */}
       <motion.div
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
         animate={{ y: [0, 10, 0] }}
