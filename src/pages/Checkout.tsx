@@ -26,7 +26,7 @@ const Checkout = () => {
   const [useDiscount, setUseDiscount] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'whatsapp'>('stripe');
 
-  const deliveryZones: { name: string; fee: number }[] = (settings as any)?.delivery_zones || [];
+  const deliveryZones: { name: string; fee: number }[] = ((settings as any)?.delivery_zones || []).filter((z: any) => z.name && z.name.trim() !== '');
 
   useEffect(() => {
     if (selectedZone && deliveryZones.length > 0) {
