@@ -14,6 +14,7 @@ import Finances from "./pages/admin/Finances";
 import Orders from "./pages/admin/Orders";
 import Settings from "./pages/admin/Settings";
 import TrackOrder from "./pages/TrackOrder";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/admin/settings" element={<Settings />} />
               <Route path="/rastrear" element={<TrackOrder />} />
               <Route path="/rastrear/:code" element={<TrackOrder />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
