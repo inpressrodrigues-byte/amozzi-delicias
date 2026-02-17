@@ -46,42 +46,54 @@ export type Database = {
           created_at: string
           customer_address: string
           customer_cep: string
+          customer_lat: number | null
+          customer_lng: number | null
           customer_name: string
           customer_whatsapp: string
+          delivery_fee: number
           id: string
           items: Json
           payment_method: string | null
           status: string
           stripe_payment_id: string | null
           total: number
+          tracking_code: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           customer_address: string
           customer_cep: string
+          customer_lat?: number | null
+          customer_lng?: number | null
           customer_name: string
           customer_whatsapp: string
+          delivery_fee?: number
           id?: string
           items?: Json
           payment_method?: string | null
           status?: string
           stripe_payment_id?: string | null
           total?: number
+          tracking_code?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           customer_address?: string
           customer_cep?: string
+          customer_lat?: number | null
+          customer_lng?: number | null
           customer_name?: string
           customer_whatsapp?: string
+          delivery_fee?: number
           id?: string
           items?: Json
           payment_method?: string | null
           status?: string
           stripe_payment_id?: string | null
           total?: number
+          tracking_code?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -164,9 +176,11 @@ export type Database = {
           accent_color: string | null
           background_color: string | null
           created_at: string
+          delivery_zones: Json | null
           hero_subtitle: string | null
           hero_title: string | null
           id: string
+          instagram_url: string | null
           logo_url: string | null
           payment_methods: Json | null
           primary_color: string | null
@@ -179,9 +193,11 @@ export type Database = {
           accent_color?: string | null
           background_color?: string | null
           created_at?: string
+          delivery_zones?: Json | null
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
+          instagram_url?: string | null
           logo_url?: string | null
           payment_methods?: Json | null
           primary_color?: string | null
@@ -194,9 +210,11 @@ export type Database = {
           accent_color?: string | null
           background_color?: string | null
           created_at?: string
+          delivery_zones?: Json | null
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
+          instagram_url?: string | null
           logo_url?: string | null
           payment_methods?: Json | null
           primary_color?: string | null
