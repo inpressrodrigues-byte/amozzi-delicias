@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Gift } from 'lucide-react';
 
 const Checkout = () => {
   const { items, total, clearCart } = useCart();
@@ -21,6 +22,8 @@ const Checkout = () => {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedZone, setSelectedZone] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [loyalty, setLoyalty] = useState<{ purchase_count: number; discount_available: boolean } | null>(null);
+  const [useDiscount, setUseDiscount] = useState(false);
 
   const deliveryZones: { name: string; fee: number }[] = (settings as any)?.delivery_zones || [];
 
@@ -31,7 +34,19 @@ const Checkout = () => {
     } else {
       setDeliveryFee(0);
     }
-  }, [selectedZone]);
+  }, [selectedZone, deliveryZones]);
+
+  // Check loyalty when whatsapp changes
+  useEffect(() => {
+    const checkLoyalty = async () => {
+      const phone = form.whatsapp.replace(/\D/g, '');
+      if (phone.length < 10) { setLoyalty(null); return; }
+      const { data } = await supabase.from('loyalty').select('purchase_count, discount_available').eq('customer_whatsapp', phone).maybeSingle();
+      setLoyalty(data as any);
+    };
+    const timeout = setTimeout(checkLoyalty, 500);
+    return () => clearTimeout(timeout);
+  }, [form.whatsapp]);
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -45,14 +60,22 @@ const Checkout = () => {
         toast.success('Localização obtida!');
         setGeoLoading(false);
       },
-      () => {
-        toast.error('Não foi possível obter sua localização');
+      (err) => {
+        if (err.code === 1) {
+          toast.error('Permissão de localização negada. Ative nas configurações do navegador.');
+        } else if (err.code === 2) {
+          toast.error('Localização indisponível. Verifique o GPS.');
+        } else {
+          toast.error('Tempo esgotado ao obter localização. Tente novamente.');
+        }
         setGeoLoading(false);
-      }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
-  const grandTotal = total + deliveryFee;
+  const discountAmount = useDiscount && loyalty?.discount_available ? total * 0.5 : 0;
+  const grandTotal = total - discountAmount + deliveryFee;
 
   if (items.length === 0) {
     return (
@@ -71,10 +94,15 @@ const Checkout = () => {
       toast.error('Preencha todos os campos');
       return;
     }
+    if (deliveryZones.length > 0 && !selectedZone) {
+      toast.error('Selecione a região de entrega');
+      return;
+    }
 
     setLoading(true);
     try {
       const orderItems = items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity }));
+      const phone = form.whatsapp.replace(/\D/g, '');
 
       const { data: orderData, error } = await supabase.from('orders').insert({
         customer_name: form.name,
@@ -91,15 +119,22 @@ const Checkout = () => {
 
       if (error) throw error;
 
+      // Update loyalty
+      await supabase.rpc('increment_loyalty', { p_whatsapp: phone });
+      if (useDiscount && loyalty?.discount_available) {
+        await supabase.rpc('use_loyalty_discount', { p_whatsapp: phone });
+      }
+
       const trackingCode = orderData?.tracking_code || '';
 
       // Send to WhatsApp
       const whatsappNumber = settings?.whatsapp_number?.replace(/\D/g, '') || '';
       const itemsList = items.map(i => `• ${i.quantity}x ${i.name} - R$${(i.price * i.quantity).toFixed(2)}`).join('\n');
       const feeText = deliveryFee > 0 ? `\n*Taxa de entrega:* R$${deliveryFee.toFixed(2)} (${selectedZone})` : '';
+      const discountText = discountAmount > 0 ? `\n*Desconto fidelidade:* -R$${discountAmount.toFixed(2)}` : '';
       const trackText = trackingCode ? `\n*Código de rastreio:* ${trackingCode}` : '';
       const locationText = location ? `\n*Localização:* https://www.google.com/maps?q=${location.lat},${location.lng}` : '';
-      const message = `🧁 *Novo Pedido AMOZI*\n\n*Cliente:* ${form.name}\n*WhatsApp:* ${form.whatsapp}\n*Endereço:* ${form.address}\n*CEP:* ${form.cep}${locationText}\n\n*Itens:*\n${itemsList}${feeText}\n\n*Total: R$${grandTotal.toFixed(2)}*${trackText}`;
+      const message = `🧁 *Novo Pedido AMOZI*\n\n*Cliente:* ${form.name}\n*WhatsApp:* ${form.whatsapp}\n*Endereço:* ${form.address}\n*CEP:* ${form.cep}${locationText}\n\n*Itens:*\n${itemsList}${feeText}${discountText}\n\n*Total: R$${grandTotal.toFixed(2)}*${trackText}`;
 
       if (whatsappNumber) {
         window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
@@ -139,6 +174,12 @@ const Checkout = () => {
                   <span>R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
                 </div>
               ))}
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-green-600 font-medium">
+                  <span>🎉 Desconto Fidelidade (50%)</span>
+                  <span>- R$ {discountAmount.toFixed(2).replace('.', ',')}</span>
+                </div>
+              )}
               {deliveryFee > 0 && (
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>🚚 Taxa de entrega ({selectedZone})</span>
@@ -159,6 +200,25 @@ const Checkout = () => {
               <div>
                 <Label htmlFor="whatsapp">WhatsApp</Label>
                 <Input id="whatsapp" value={form.whatsapp} onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="(11) 99999-9999" />
+                {loyalty && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <Gift className="h-4 w-4 text-primary" />
+                    <span className="text-xs text-muted-foreground">
+                      {loyalty.discount_available
+                        ? '🎉 Você tem um desconto de 50% disponível!'
+                        : `${loyalty.purchase_count}/10 compras para ganhar 50% de desconto`}
+                    </span>
+                    {loyalty.discount_available && (
+                      <Badge
+                        className="cursor-pointer"
+                        variant={useDiscount ? 'default' : 'outline'}
+                        onClick={() => setUseDiscount(!useDiscount)}
+                      >
+                        {useDiscount ? '✓ Aplicado' : 'Usar desconto'}
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="address">Endereço</Label>
@@ -192,6 +252,11 @@ const Checkout = () => {
                   {geoLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MapPin className="h-4 w-4 mr-2" />}
                   {location ? '📍 Localização obtida' : 'Compartilhar minha localização'}
                 </Button>
+                {!location && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ative o GPS e permita a localização no navegador para facilitar a entrega.
+                  </p>
+                )}
               </div>
 
               <Button type="submit" className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={loading}>

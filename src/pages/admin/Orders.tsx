@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { toast } from 'sonner';
-import { Trash2, MapPin } from 'lucide-react';
+import { Trash2, MapPin, Check } from 'lucide-react';
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
@@ -18,9 +18,12 @@ const STATUS_OPTIONS = [
 
 const statusLabel = (s: string) => STATUS_OPTIONS.find(o => o.value === s)?.label || s;
 const statusColor = (s: string) => STATUS_OPTIONS.find(o => o.value === s)?.color || '';
+const statusIdx = (s: string) => STATUS_OPTIONS.findIndex(o => o.value === s);
 
 const Orders = () => {
   const queryClient = useQueryClient();
+  const { data: settings } = useSiteSettings();
+
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-orders-list'],
     queryFn: async () => {
@@ -30,11 +33,30 @@ const Orders = () => {
     },
   });
 
+  const sendWhatsAppNotification = (order: any, newStatus: string) => {
+    const customerPhone = order.customer_whatsapp?.replace(/\D/g, '');
+    if (!customerPhone) return;
+    const trackingCode = order.tracking_code || '';
+    const statusMessages: Record<string, string> = {
+      preparing: `🍰 *AMOZI* - Seu pedido está sendo preparado!\n\n🔗 Código: ${trackingCode}\nAcompanhe: ${window.location.origin}/rastrear/${trackingCode}`,
+      delivering: `🚚 *AMOZI* - Seu pedido saiu para entrega!\n\n🔗 Código: ${trackingCode}\nAcompanhe: ${window.location.origin}/rastrear/${trackingCode}`,
+      delivered: `✅ *AMOZI* - Seu pedido foi entregue!\n\nObrigado pela preferência! 💕\n🔗 Avalie: ${window.location.origin}/rastrear/${trackingCode}`,
+    };
+    const message = statusMessages[newStatus];
+    if (message) {
+      window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    }
+  };
+
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', id);
     if (error) { toast.error('Erro ao atualizar status'); return; }
     toast.success(`Status atualizado: ${statusLabel(status)}`);
     queryClient.invalidateQueries({ queryKey: ['admin-orders-list'] });
+
+    // Send WhatsApp notification
+    const order = orders?.find(o => o.id === id);
+    if (order) sendWhatsAppNotification(order, status);
   };
 
   const deleteOrder = async (id: string) => {
@@ -56,17 +78,33 @@ const Orders = () => {
         <div className="space-y-4">
           {orders?.map(order => {
             const items = Array.isArray(order.items) ? order.items as any[] : [];
-            const lat = (order as any).customer_lat;
-            const lng = (order as any).customer_lng;
-            const deliveryFee = Number((order as any).delivery_fee || 0);
-            const trackingCode = (order as any).tracking_code || '';
+            const lat = order.customer_lat;
+            const lng = order.customer_lng;
+            const deliveryFee = Number(order.delivery_fee || 0);
+            const trackingCode = order.tracking_code || '';
+            const currentIdx = statusIdx(order.status);
             return (
               <Card key={order.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-base">{order.customer_name}</CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge className={statusColor(order.status)}>{statusLabel(order.status)}</Badge>
+                      {/* Status pills with checkmarks */}
+                      <div className="flex gap-1">
+                        {STATUS_OPTIONS.map((s, i) => {
+                          const completed = i < currentIdx;
+                          const active = i === currentIdx;
+                          return (
+                            <Badge key={s.value} className={`text-[10px] px-1.5 ${
+                              completed ? 'bg-green-500 text-white' :
+                              active ? statusColor(s.value) : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {completed ? <Check className="h-3 w-3" /> : null}
+                              {!completed && s.label.slice(0, 4)}
+                            </Badge>
+                          );
+                        })}
+                      </div>
                       <Select value={order.status} onValueChange={v => updateStatus(order.id, v)}>
                         <SelectTrigger className="w-[160px] h-8 text-xs">
                           <SelectValue />

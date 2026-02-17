@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,10 +17,14 @@ interface Product {
 
 const ProductCard = ({ product }: { product: Product }) => {
   const { addItem } = useCart();
+  const [quantity, setQuantity] = useState(1);
 
   const handleAdd = () => {
-    addItem({ id: product.id, name: product.name, price: product.price, image_url: product.image_url ?? undefined });
-    toast.success(`${product.name} adicionado ao carrinho!`);
+    for (let i = 0; i < quantity; i++) {
+      addItem({ id: product.id, name: product.name, price: product.price, image_url: product.image_url ?? undefined });
+    }
+    toast.success(`${quantity}x ${product.name} adicionado ao carrinho!`);
+    setQuantity(1);
   };
 
   return (
@@ -56,9 +61,18 @@ const ProductCard = ({ product }: { product: Product }) => {
             <span className="text-xl font-bold text-primary">
               R$ {product.price.toFixed(2).replace('.', ',')}
             </span>
-            <Button size="sm" onClick={handleAdd} className="bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4 mr-1" /> Pedir
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
+                <Minus className="h-3 w-3" />
+              </Button>
+              <span className="w-8 text-center text-sm font-semibold">{quantity}</span>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setQuantity(q => q + 1)}>
+                <Plus className="h-3 w-3" />
+              </Button>
+              <Button size="sm" onClick={handleAdd} className="bg-primary hover:bg-primary/90 ml-1">
+                Pedir
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
