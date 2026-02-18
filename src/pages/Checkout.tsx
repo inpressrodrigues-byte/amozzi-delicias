@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Loader2, Gift, CreditCard, MessageCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Gift, CreditCard, MessageCircle, Tag, CheckCircle2 } from 'lucide-react';
 
 const Checkout = () => {
   const { items, total, clearCart } = useCart();
@@ -18,6 +18,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
   const [form, setForm] = useState({ name: '', whatsapp: '', address: '', cep: '', email: '' });
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedZone, setSelectedZone] = useState('');
@@ -25,6 +26,9 @@ const Checkout = () => {
   const [loyalty, setLoyalty] = useState<{ purchase_count: number; discount_available: boolean } | null>(null);
   const [useDiscount, setUseDiscount] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'whatsapp'>('stripe');
+  const [couponCode, setCouponCode] = useState('');
+  const [coupon, setCoupon] = useState<{ discount_type: string; discount_value: number; code: string } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const deliveryZones: { name: string; fee: number }[] = ((settings as any)?.delivery_zones || []).filter((z: any) => z.name && z.name.trim() !== '');
 
@@ -48,18 +52,65 @@ const Checkout = () => {
     return () => clearTimeout(timeout);
   }, [form.whatsapp]);
 
-  const requestLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('Seu navegador não suporta geolocalização');
-      return;
+  // CEP automático via ViaCEP
+  useEffect(() => {
+    const cep = form.cep.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    setCepLoading(true);
+    fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.erro) {
+          const address = [data.logradouro, data.bairro, data.localidade, data.uf].filter(Boolean).join(', ');
+          setForm(f => ({ ...f, address }));
+          toast.success('Endereço preenchido automaticamente!');
+        } else {
+          toast.error('CEP não encontrado');
+        }
+      })
+      .catch(() => toast.error('Erro ao buscar CEP'))
+      .finally(() => setCepLoading(false));
+  }, [form.cep]);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('coupons' as any)
+        .select('*')
+        .eq('code', couponCode.toUpperCase().trim())
+        .eq('active', true)
+        .maybeSingle();
+      if (error || !data) { toast.error('Cupom inválido ou inativo'); return; }
+      const c = data as any;
+      if (c.expires_at && new Date(c.expires_at) < new Date()) { toast.error('Cupom expirado'); return; }
+      if (c.max_uses && c.uses_count >= c.max_uses) { toast.error('Cupom esgotado'); return; }
+      if (c.min_order_value > total) { toast.error(`Pedido mínimo: R$ ${Number(c.min_order_value).toFixed(2)}`); return; }
+      setCoupon({ discount_type: c.discount_type, discount_value: c.discount_value, code: c.code });
+      toast.success(`Cupom ${c.code} aplicado! 🎉`);
+    } finally {
+      setCouponLoading(false);
     }
+  };
+
+  const removeCoupon = () => { setCoupon(null); setCouponCode(''); };
+
+  const couponDiscount = coupon
+    ? coupon.discount_type === 'percentage'
+      ? total * (coupon.discount_value / 100)
+      : Math.min(coupon.discount_value, total)
+    : 0;
+
+  const loyaltyDiscount = useDiscount && loyalty?.discount_available ? total * 0.5 : 0;
+  const discountAmount = Math.max(couponDiscount, loyaltyDiscount);
+  const grandTotal = Math.max(0, total - discountAmount + deliveryFee);
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) { toast.error('Seu navegador não suporta geolocalização'); return; }
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        toast.success('Localização obtida!');
-        setGeoLoading(false);
-      },
+      (pos) => { setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); toast.success('Localização obtida!'); setGeoLoading(false); },
       (err) => {
         if (err.code === 1) toast.error('Permissão de localização negada.');
         else if (err.code === 2) toast.error('Localização indisponível.');
@@ -69,9 +120,6 @@ const Checkout = () => {
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
-
-  const discountAmount = useDiscount && loyalty?.discount_available ? total * 0.5 : 0;
-  const grandTotal = total - discountAmount + deliveryFee;
 
   if (items.length === 0) {
     return (
@@ -111,6 +159,9 @@ const Checkout = () => {
     await supabase.rpc('increment_loyalty', { p_whatsapp: phone });
     if (useDiscount && loyalty?.discount_available) {
       await supabase.rpc('use_loyalty_discount', { p_whatsapp: phone });
+    }
+    if (coupon) {
+      await supabase.from('coupons' as any).update({ uses_count: (coupon as any).uses_count + 1 }).eq('code', coupon.code);
     }
 
     return orderData?.tracking_code || '';
@@ -223,10 +274,16 @@ const Checkout = () => {
                   <span className="font-semibold">R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
                 </div>
               ))}
-              {discountAmount > 0 && (
+              {coupon && (
+                <div className="flex justify-between text-sm text-green-600 font-medium">
+                  <span>🏷️ Cupom {coupon.code}</span>
+                  <span>- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
+                </div>
+              )}
+              {loyaltyDiscount > 0 && (
                 <div className="flex justify-between text-sm text-green-600 font-medium">
                   <span>🎉 Desconto Fidelidade (50%)</span>
-                  <span>- R$ {discountAmount.toFixed(2).replace('.', ',')}</span>
+                  <span>- R$ {loyaltyDiscount.toFixed(2).replace('.', ',')}</span>
                 </div>
               )}
               {deliveryFee > 0 && (
@@ -285,8 +342,8 @@ const Checkout = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="cep">CEP</Label>
-                  <Input id="cep" value={form.cep} onChange={e => setForm(f => ({ ...f, cep: e.target.value }))} placeholder="00000-000" className="rounded-lg" />
+                  <Label htmlFor="cep">CEP {cepLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
+                  <Input id="cep" value={form.cep} onChange={e => setForm(f => ({ ...f, cep: e.target.value }))} placeholder="00000-000" className="rounded-lg" maxLength={9} />
                 </div>
                 {deliveryZones.length > 0 && (
                   <div>
@@ -303,6 +360,31 @@ const Checkout = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                )}
+              </div>
+
+              {/* Cupom */}
+              <div>
+                <Label>Cupom de Desconto</Label>
+                {coupon ? (
+                  <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span className="font-mono font-bold text-green-700 flex-1">{coupon.code}</span>
+                    <button onClick={removeCoupon} className="text-xs text-muted-foreground hover:text-destructive">remover</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      value={couponCode}
+                      onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="Digite o cupom"
+                      className="rounded-lg font-mono uppercase"
+                      onKeyDown={e => e.key === 'Enter' && applyCoupon()}
+                    />
+                    <Button type="button" variant="outline" onClick={applyCoupon} disabled={couponLoading} className="flex-shrink-0">
+                      {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Tag className="h-4 w-4" />}
+                    </Button>
                   </div>
                 )}
               </div>

@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          min_order_value: number
+          uses_count: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          min_order_value?: number
+          uses_count?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          min_order_value?: number
+          uses_count?: number
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
@@ -208,6 +247,7 @@ export type Database = {
           hero_subtitle: string | null
           hero_title: string | null
           id: string
+          ifood_url: string | null
           instagram_url: string | null
           logo_url: string | null
           payment_methods: Json | null
@@ -226,6 +266,7 @@ export type Database = {
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
+          ifood_url?: string | null
           instagram_url?: string | null
           logo_url?: string | null
           payment_methods?: Json | null
@@ -244,6 +285,7 @@ export type Database = {
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
+          ifood_url?: string | null
           instagram_url?: string | null
           logo_url?: string | null
           payment_methods?: Json | null

@@ -33,14 +33,34 @@ const Orders = () => {
     },
   });
 
-  const sendWhatsAppNotification = (order: any, newStatus: string) => {
+  const sendWhatsAppNotification = async (order: any, newStatus: string) => {
     const customerPhone = order.customer_whatsapp?.replace(/\D/g, '');
     if (!customerPhone) return;
     const trackingCode = order.tracking_code || '';
+    const origin = window.location.origin;
+
+    let loyaltyMsg = '';
+    if (newStatus === 'delivered') {
+      const { data: loyalty } = await supabase
+        .from('loyalty')
+        .select('purchase_count, discount_available')
+        .eq('customer_whatsapp', customerPhone)
+        .maybeSingle();
+      if (loyalty) {
+        const count = loyalty.purchase_count;
+        const remaining = 10 - (count % 10);
+        if (loyalty.discount_available) {
+          loyaltyMsg = `\n\n🎉 *Parabéns! Você completou 10 pedidos!*\nVocê ganhou *50% de desconto* no seu próximo pedido. Use no checkout!`;
+        } else {
+          loyaltyMsg = `\n\n⭐ *Fidelidade AMOZI:* ${count} pedido${count !== 1 ? 's' : ''} realizado${count !== 1 ? 's' : ''}\nFaltam apenas *${remaining} pedido${remaining !== 1 ? 's' : ''}* para ganhar *50% de desconto*! 🎁`;
+        }
+      }
+    }
+
     const statusMessages: Record<string, string> = {
-      preparing: `🍰 *AMOZI* - Seu pedido está sendo preparado!\n\n🔗 Código: ${trackingCode}\nAcompanhe: ${window.location.origin}/rastrear/${trackingCode}`,
-      delivering: `🚚 *AMOZI* - Seu pedido saiu para entrega!\n\n🔗 Código: ${trackingCode}\nAcompanhe: ${window.location.origin}/rastrear/${trackingCode}`,
-      delivered: `✅ *AMOZI* - Seu pedido foi entregue!\n\nObrigado pela preferência! 💕\n🔗 Avalie: ${window.location.origin}/rastrear/${trackingCode}`,
+      preparing: `🍰 *AMOZI Delícias no Pote*\n\nOlá, ${order.customer_name}! Seu pedido está sendo preparado com muito carinho! 💕\n\n🔗 Rastreie: ${origin}/rastrear/${trackingCode}`,
+      delivering: `🚚 *AMOZI Delícias no Pote*\n\nOlá, ${order.customer_name}! Seu pedido *saiu para entrega* e logo chegará! 🎉\n\n🔗 Rastreie: ${origin}/rastrear/${trackingCode}`,
+      delivered: `✅ *AMOZI Delícias no Pote*\n\nOlá, ${order.customer_name}! Seu pedido foi *entregue*!\n\nEsperamos que você adore! Obrigada pela preferência! 💕${loyaltyMsg}\n\n🔗 Código: ${trackingCode}`,
     };
     const message = statusMessages[newStatus];
     if (message) {
