@@ -29,6 +29,7 @@ const Settings = () => {
     accent_color: '#C49A4A',
     background_color: '#F4F1EC',
     instagram_url: '',
+    ifood_url: '',
   });
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -47,6 +48,7 @@ const Settings = () => {
         accent_color: settings.accent_color || '#C49A4A',
         background_color: settings.background_color || '#F4F1EC',
         instagram_url: (settings as any).instagram_url || '',
+        ifood_url: (settings as any).ifood_url || '',
       });
       const zones = (settings as any).delivery_zones;
       if (Array.isArray(zones)) setDeliveryZones(zones);
@@ -179,6 +181,10 @@ const Settings = () => {
             <div>
               <Label>Instagram (URL ou @)</Label>
               <Input value={form.instagram_url} onChange={e => setForm(f => ({ ...f, instagram_url: e.target.value }))} placeholder="https://instagram.com/amozi ou @amozi" />
+            </div>
+            <div>
+              <Label>Link do iFood 🛵</Label>
+              <Input value={form.ifood_url} onChange={e => setForm(f => ({ ...f, ifood_url: e.target.value }))} placeholder="https://www.ifood.com.br/delivery/..." />
             </div>
           </CardContent>
         </Card>

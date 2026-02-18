@@ -5,6 +5,7 @@ import ProductsSection from '@/components/public/ProductsSection';
 import AboutSection from '@/components/public/AboutSection';
 import Footer from '@/components/public/Footer';
 import CartDrawer from '@/components/public/CartDrawer';
+import FloatingButtons from '@/components/public/FloatingButtons';
 
 const Index = () => {
   const [cartOpen, setCartOpen] = useState(false);
@@ -17,8 +18,10 @@ const Index = () => {
       <AboutSection />
       <Footer />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+      <FloatingButtons />
     </div>
   );
 };
 
 export default Index;
+
