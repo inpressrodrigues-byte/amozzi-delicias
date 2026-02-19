@@ -322,6 +322,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_loyalty_by_whatsapp: {
+        Args: { p_whatsapp: string }
+        Returns: {
+          discount_available: boolean
+          purchase_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -41,14 +41,19 @@ const Checkout = () => {
     }
   }, [selectedZone, deliveryZones]);
 
+  // Loyalty lookup via secure RPC (no enumeration possible)
   useEffect(() => {
     const checkLoyalty = async () => {
       const phone = form.whatsapp.replace(/\D/g, '');
       if (phone.length < 10) { setLoyalty(null); return; }
-      const { data } = await supabase.from('loyalty').select('purchase_count, discount_available').eq('customer_whatsapp', phone).maybeSingle();
-      setLoyalty(data as any);
+      const { data } = await supabase.rpc('get_loyalty_by_whatsapp' as any, { p_whatsapp: phone });
+      if (data && Array.isArray(data) && data.length > 0) {
+        setLoyalty(data[0] as any);
+      } else {
+        setLoyalty(null);
+      }
     };
-    const timeout = setTimeout(checkLoyalty, 500);
+    const timeout = setTimeout(checkLoyalty, 600);
     return () => clearTimeout(timeout);
   }, [form.whatsapp]);
 
@@ -72,23 +77,23 @@ const Checkout = () => {
       .finally(() => setCepLoading(false));
   }, [form.cep]);
 
+  // Client-side coupon preview (server re-validates on submit)
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponLoading(true);
     try {
       const { data, error } = await supabase
-        .from('coupons' as any)
-        .select('*')
+        .from('coupons')
+        .select('code, discount_type, discount_value, active, expires_at, max_uses, uses_count, min_order_value')
         .eq('code', couponCode.toUpperCase().trim())
         .eq('active', true)
         .maybeSingle();
       if (error || !data) { toast.error('Cupom inválido ou inativo'); return; }
-      const c = data as any;
-      if (c.expires_at && new Date(c.expires_at) < new Date()) { toast.error('Cupom expirado'); return; }
-      if (c.max_uses && c.uses_count >= c.max_uses) { toast.error('Cupom esgotado'); return; }
-      if (c.min_order_value > total) { toast.error(`Pedido mínimo: R$ ${Number(c.min_order_value).toFixed(2)}`); return; }
-      setCoupon({ discount_type: c.discount_type, discount_value: c.discount_value, code: c.code });
-      toast.success(`Cupom ${c.code} aplicado! 🎉`);
+      if (data.expires_at && new Date(data.expires_at) < new Date()) { toast.error('Cupom expirado'); return; }
+      if (data.max_uses && data.uses_count >= data.max_uses) { toast.error('Cupom esgotado'); return; }
+      if (data.min_order_value > total) { toast.error(`Pedido mínimo: R$ ${Number(data.min_order_value).toFixed(2)}`); return; }
+      setCoupon({ discount_type: data.discount_type, discount_value: data.discount_value, code: data.code });
+      toast.success(`Cupom ${data.code} aplicado! 🎉`);
     } finally {
       setCouponLoading(false);
     }
@@ -136,68 +141,60 @@ const Checkout = () => {
     );
   }
 
-  const createOrder = async () => {
-    const orderItems = items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity }));
+  // Validate form fields client-side before calling edge function
+  const validateForm = (): boolean => {
     const phone = form.whatsapp.replace(/\D/g, '');
+    const cep = form.cep.replace(/\D/g, '');
+    if (!form.name.trim() || form.name.trim().length < 2) { toast.error('Nome inválido'); return false; }
+    if (phone.length < 10) { toast.error('WhatsApp inválido'); return false; }
+    if (!form.address.trim() || form.address.trim().length < 5) { toast.error('Endereço inválido'); return false; }
+    if (cep.length !== 8) { toast.error('CEP inválido'); return false; }
+    if (deliveryZones.length > 0 && !selectedZone) { toast.error('Selecione a região de entrega'); return false; }
+    return true;
+  };
 
-    const { data: orderData, error } = await supabase.from('orders').insert({
-      customer_name: form.name,
-      customer_whatsapp: form.whatsapp,
-      customer_address: form.address,
-      customer_cep: form.cep,
-      items: orderItems,
-      total: grandTotal,
-      delivery_fee: deliveryFee,
-      customer_lat: location?.lat || null,
-      customer_lng: location?.lng || null,
-      status: 'pending',
-      payment_method: paymentMethod,
-    } as any).select('tracking_code').single();
-
-    if (error) throw error;
-
-    await supabase.rpc('increment_loyalty', { p_whatsapp: phone });
-    if (useDiscount && loyalty?.discount_available) {
-      await supabase.rpc('use_loyalty_discount', { p_whatsapp: phone });
-    }
-    if (coupon) {
-      await supabase.from('coupons' as any).update({ uses_count: (coupon as any).uses_count + 1 }).eq('code', coupon.code);
-    }
-
-    return orderData?.tracking_code || '';
+  // Create order via secure edge function (server validates + recalculates prices)
+  const createOrderViaEdgeFunction = async () => {
+    const { data, error } = await supabase.functions.invoke('create-order', {
+      body: {
+        customer_name: form.name,
+        customer_whatsapp: form.whatsapp.replace(/\D/g, ''),
+        customer_address: form.address,
+        customer_cep: form.cep.replace(/\D/g, ''),
+        customer_lat: location?.lat || null,
+        customer_lng: location?.lng || null,
+        item_ids: items.map(i => ({ id: i.id, quantity: i.quantity })),
+        delivery_zone_name: selectedZone || null,
+        use_loyalty_discount: useDiscount && loyalty?.discount_available,
+        coupon_code: coupon?.code || null,
+        payment_method: paymentMethod,
+      },
+    });
+    if (error) throw new Error(error.message || 'Erro ao criar pedido');
+    if (data?.error) throw new Error(data.error);
+    return data as { tracking_code: string; order_id: string; grand_total: number; items: any[]; delivery_fee: number; discount_amount: number };
   };
 
   const handleStripePayment = async () => {
-    if (!form.name || !form.whatsapp || !form.address || !form.cep) {
-      toast.error('Preencha todos os campos');
-      return;
-    }
-    if (deliveryZones.length > 0 && !selectedZone) {
-      toast.error('Selecione a região de entrega');
-      return;
-    }
-
+    if (!validateForm()) return;
     setLoading(true);
     try {
-      const trackingCode = await createOrder();
+      const orderResult = await createOrderViaEdgeFunction();
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
-          items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
-          customer_name: form.name,
+          order_id: orderResult.order_id,
           customer_email: form.email || undefined,
-          delivery_fee: deliveryFee,
-          discount_amount: discountAmount,
-          order_metadata: { tracking_code: trackingCode, customer_whatsapp: form.whatsapp },
         },
       });
 
       if (error) throw error;
       if (data?.url) {
+        clearCart();
         window.location.href = data.url;
       }
     } catch (err: any) {
-      toast.error('Erro ao processar pagamento. Tente novamente.');
+      toast.error(err.message || 'Erro ao processar pagamento. Tente novamente.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -205,26 +202,18 @@ const Checkout = () => {
   };
 
   const handleWhatsAppOrder = async () => {
-    if (!form.name || !form.whatsapp || !form.address || !form.cep) {
-      toast.error('Preencha todos os campos');
-      return;
-    }
-    if (deliveryZones.length > 0 && !selectedZone) {
-      toast.error('Selecione a região de entrega');
-      return;
-    }
-
+    if (!validateForm()) return;
     setLoading(true);
     try {
-      const trackingCode = await createOrder();
+      const orderResult = await createOrderViaEdgeFunction();
 
       const whatsappNumber = settings?.whatsapp_number?.replace(/\D/g, '') || '';
-      const itemsList = items.map(i => `• ${i.quantity}x ${i.name} - R$${(i.price * i.quantity).toFixed(2)}`).join('\n');
-      const feeText = deliveryFee > 0 ? `\n*Taxa de entrega:* R$${deliveryFee.toFixed(2)} (${selectedZone})` : '';
-      const discountText = discountAmount > 0 ? `\n*Desconto fidelidade:* -R$${discountAmount.toFixed(2)}` : '';
-      const trackText = trackingCode ? `\n*Código de rastreio:* ${trackingCode}` : '';
+      const itemsList = orderResult.items.map((i: any) => `• ${i.quantity}x ${i.name} - R$${(i.price * i.quantity).toFixed(2)}`).join('\n');
+      const feeText = orderResult.delivery_fee > 0 ? `\n*Taxa de entrega:* R$${orderResult.delivery_fee.toFixed(2)} (${selectedZone})` : '';
+      const discountText = orderResult.discount_amount > 0 ? `\n*Desconto:* -R$${orderResult.discount_amount.toFixed(2)}` : '';
+      const trackText = orderResult.tracking_code ? `\n*Código de rastreio:* ${orderResult.tracking_code}` : '';
       const locationText = location ? `\n*Localização:* https://www.google.com/maps?q=${location.lat},${location.lng}` : '';
-      const message = `🧁 *Novo Pedido AMOZI*\n\n*Cliente:* ${form.name}\n*WhatsApp:* ${form.whatsapp}\n*Endereço:* ${form.address}\n*CEP:* ${form.cep}${locationText}\n\n*Itens:*\n${itemsList}${feeText}${discountText}\n\n*Total: R$${grandTotal.toFixed(2)}*${trackText}`;
+      const message = `🧁 *Novo Pedido AMOZI*\n\n*Cliente:* ${form.name}\n*WhatsApp:* ${form.whatsapp}\n*Endereço:* ${form.address}\n*CEP:* ${form.cep}${locationText}\n\n*Itens:*\n${itemsList}${feeText}${discountText}\n\n*Total: R$${orderResult.grand_total.toFixed(2)}*${trackText}`;
 
       if (whatsappNumber) {
         window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
@@ -232,13 +221,13 @@ const Checkout = () => {
 
       clearCart();
       toast.success('Pedido realizado com sucesso!');
-      if (trackingCode) {
-        navigate(`/rastrear/${trackingCode}`);
+      if (orderResult.tracking_code) {
+        navigate(`/rastrear/${orderResult.tracking_code}`);
       } else {
         navigate('/');
       }
-    } catch (err) {
-      toast.error('Erro ao realizar pedido.');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao realizar pedido.');
     } finally {
       setLoading(false);
     }
@@ -275,13 +264,13 @@ const Checkout = () => {
                 </div>
               ))}
               {coupon && (
-                <div className="flex justify-between text-sm text-green-600 font-medium">
+                <div className="flex justify-between text-sm text-primary font-medium">
                   <span>🏷️ Cupom {coupon.code}</span>
                   <span>- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
                 </div>
               )}
               {loyaltyDiscount > 0 && (
-                <div className="flex justify-between text-sm text-green-600 font-medium">
+                <div className="flex justify-between text-sm text-primary font-medium">
                   <span>🎉 Desconto Fidelidade (50%)</span>
                   <span>- R$ {loyaltyDiscount.toFixed(2).replace('.', ',')}</span>
                 </div>
@@ -302,11 +291,11 @@ const Checkout = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Nome Completo</Label>
-                  <Input id="name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Seu nome" className="rounded-lg" />
+                  <Input id="name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Seu nome" className="rounded-lg" maxLength={100} />
                 </div>
                 <div>
                   <Label htmlFor="whatsapp">WhatsApp</Label>
-                  <Input id="whatsapp" value={form.whatsapp} onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="(11) 99999-9999" className="rounded-lg" />
+                  <Input id="whatsapp" value={form.whatsapp} onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="(11) 99999-9999" className="rounded-lg" maxLength={20} />
                 </div>
               </div>
 
@@ -332,12 +321,12 @@ const Checkout = () => {
 
               <div>
                 <Label htmlFor="email">E-mail (opcional)</Label>
-                <Input id="email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="seu@email.com" className="rounded-lg" />
+                <Input id="email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="seu@email.com" className="rounded-lg" maxLength={254} />
               </div>
 
               <div>
                 <Label htmlFor="address">Endereço Completo</Label>
-                <Input id="address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Rua, número, bairro, cidade" className="rounded-lg" />
+                <Input id="address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Rua, número, bairro, cidade" className="rounded-lg" maxLength={300} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -368,9 +357,9 @@ const Checkout = () => {
               <div>
                 <Label>Cupom de Desconto</Label>
                 {coupon ? (
-                  <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                    <span className="font-mono font-bold text-green-700 flex-1">{coupon.code}</span>
+                  <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span className="font-mono font-bold text-primary flex-1">{coupon.code}</span>
                     <button onClick={removeCoupon} className="text-xs text-muted-foreground hover:text-destructive">remover</button>
                   </div>
                 ) : (
@@ -381,6 +370,7 @@ const Checkout = () => {
                       placeholder="Digite o cupom"
                       className="rounded-lg font-mono uppercase"
                       onKeyDown={e => e.key === 'Enter' && applyCoupon()}
+                      maxLength={30}
                     />
                     <Button type="button" variant="outline" onClick={applyCoupon} disabled={couponLoading} className="flex-shrink-0">
                       {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Tag className="h-4 w-4" />}
