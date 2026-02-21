@@ -236,6 +236,42 @@ export type Database = {
         }
         Relationships: []
       }
+      remote_orders: {
+        Row: {
+          created_at: string
+          customer_name: string
+          id: string
+          items: Json
+          notes: string | null
+          paid: boolean
+          sector: string
+          separated: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          paid?: boolean
+          sector?: string
+          separated?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          paid?: boolean
+          sector?: string
+          separated?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           about_text: string | null
