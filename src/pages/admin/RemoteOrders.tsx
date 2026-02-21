@@ -59,7 +59,7 @@ const RemoteOrders = () => {
       if (existing) {
         return prev.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { product_id: product.id, name: product.name, quantity: 1 }];
+      return [...prev, { product_id: product.id, name: product.description || product.name, quantity: 1 }];
     });
   };
 
@@ -177,7 +177,7 @@ const RemoteOrders = () => {
                                 : 'border-border hover:border-primary/50'
                             }`}
                           >
-                            <span className="font-medium">{product.name}</span>
+                            <span className="font-medium">{product.description || product.name}</span>
                             {sel && (
                               <Badge className="absolute top-1 right-1 text-[10px] px-1.5">{sel.quantity}</Badge>
                             )}
