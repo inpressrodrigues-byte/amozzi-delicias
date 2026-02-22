@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,14 +8,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
-import { Plus, Minus, Trash2, Filter, Search, History, Package } from 'lucide-react';
+import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+// ── Types ──
 interface SelectedItem {
   product_id: string;
   name: string;
@@ -29,6 +32,7 @@ const PAYMENT_OPTIONS = [
   { value: 'pago_dinheiro', label: '💵 Pago Dinheiro', variant: 'default' as const },
 ];
 
+// ── Main Component ──
 const RemoteOrders = () => {
   const queryClient = useQueryClient();
   const { data: products } = useProducts(true);
@@ -48,6 +52,18 @@ const RemoteOrders = () => {
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
 
+  // Billing settings state
+  const [billingSettings, setBillingSettings] = useState({
+    whatsapp_token: '',
+    phone_number_id: '',
+    pix_key: '',
+    pix_name: '',
+    billing_message: '',
+    billing_enabled: false,
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // ── Queries ──
   const { data: orders, isLoading } = useQuery({
     queryKey: ['remote-orders'],
     queryFn: async () => {
@@ -60,6 +76,33 @@ const RemoteOrders = () => {
     },
   });
 
+  const { data: settingsData } = useQuery({
+    queryKey: ['billing-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('billing_settings')
+        .select('*')
+        .limit(1)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (settingsData) {
+      setBillingSettings({
+        whatsapp_token: settingsData.whatsapp_token || '',
+        phone_number_id: settingsData.phone_number_id || '',
+        pix_key: settingsData.pix_key || '',
+        pix_name: settingsData.pix_name || '',
+        billing_message: settingsData.billing_message || '',
+        billing_enabled: settingsData.billing_enabled || false,
+      });
+    }
+  }, [settingsData]);
+
+  // ── Handlers ──
   const addItem = (product: any) => {
     setSelectedItems(prev => {
       const existing = prev.find(i => i.product_id === product.id);
@@ -134,11 +177,27 @@ const RemoteOrders = () => {
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
   };
 
-  // Split orders
+  const saveBillingSettings = async () => {
+    if (!settingsData?.id) return;
+    setSavingSettings(true);
+    const { error } = await supabase.from('billing_settings').update({
+      whatsapp_token: billingSettings.whatsapp_token,
+      phone_number_id: billingSettings.phone_number_id,
+      pix_key: billingSettings.pix_key,
+      pix_name: billingSettings.pix_name,
+      billing_message: billingSettings.billing_message,
+      billing_enabled: billingSettings.billing_enabled,
+    }).eq('id', settingsData.id);
+    setSavingSettings(false);
+    if (error) { toast.error('Erro ao salvar'); return; }
+    toast.success('Configurações salvas!');
+    queryClient.invalidateQueries({ queryKey: ['billing-settings'] });
+  };
+
+  // ── Derived data ──
   const activeOrders = orders?.filter(o => !o.delivered);
   const deliveredOrders = orders?.filter(o => o.delivered);
 
-  // Filter active orders
   const filteredOrders = activeOrders?.filter(order => {
     if (filterName && !order.customer_name.toLowerCase().includes(filterName.toLowerCase())) return false;
     if (filterPayment !== 'all' && order.payment_status !== filterPayment) return false;
@@ -158,6 +217,7 @@ const RemoteOrders = () => {
     return <Badge variant={opt.variant} className="text-xs">{opt.label}</Badge>;
   };
 
+  // ── Order Card Sub-Component ──
   const OrderCard = ({ order, showBillingControls = false }: { order: any; showBillingControls?: boolean }) => {
     const items = Array.isArray(order.items) ? order.items as any[] : [];
     return (
@@ -209,17 +269,11 @@ const RemoteOrders = () => {
                 </SelectContent>
               </Select>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox
-                  checked={order.separated}
-                  onCheckedChange={v => toggleSeparated(order.id, v === true)}
-                />
+                <Checkbox checked={order.separated} onCheckedChange={v => toggleSeparated(order.id, v === true)} />
                 Separado
               </label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox
-                  checked={order.delivered}
-                  onCheckedChange={v => toggleDelivered(order.id, v === true)}
-                />
+                <Checkbox checked={order.delivered} onCheckedChange={v => toggleDelivered(order.id, v === true)} />
                 Entregue
               </label>
             </div>
@@ -228,13 +282,8 @@ const RemoteOrders = () => {
               <div className="flex items-center gap-3 flex-wrap">
                 {getPaymentBadge(order.payment_status || 'nao_pago')}
                 {order.payment_status === 'nao_pago' && (
-                  <Select
-                    value={order.payment_status}
-                    onValueChange={v => updatePaymentStatus(order.id, v)}
-                  >
-                    <SelectTrigger className="h-8 w-40 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={order.payment_status} onValueChange={v => updatePaymentStatus(order.id, v)}>
+                    <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {PAYMENT_OPTIONS.map(o => (
                         <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -260,18 +309,22 @@ const RemoteOrders = () => {
     );
   };
 
+  // ── Render ──
   return (
     <AdminLayout>
       <h1 className="font-display text-3xl font-bold mb-6">Pedidos Remotos</h1>
 
       <Tabs defaultValue="new" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg">
+        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
           <TabsTrigger value="new">Novo Pedido</TabsTrigger>
           <TabsTrigger value="list">
             Pedidos {activeOrders?.length ? `(${activeOrders.length})` : ''}
           </TabsTrigger>
           <TabsTrigger value="history">
             <History className="h-4 w-4 mr-1" /> Histórico
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings2 className="h-4 w-4 mr-1" /> Config
           </TabsTrigger>
         </TabsList>
 
@@ -443,7 +496,7 @@ const RemoteOrders = () => {
               <CardTitle className="text-lg flex items-center gap-2">
                 <History className="h-5 w-5" /> Histórico de Entregas
               </CardTitle>
-              <p className="text-sm text-muted-foreground">Pedidos entregues. Configure datas de cobrança para o bot enviar automaticamente.</p>
+              <CardDescription>Pedidos entregues. Configure datas de cobrança e o bot envia automaticamente.</CardDescription>
             </CardHeader>
           </Card>
 
@@ -457,6 +510,167 @@ const RemoteOrders = () => {
               )}
             </div>
           )}
+        </TabsContent>
+
+        {/* ===== SETTINGS TAB ===== */}
+        <TabsContent value="settings">
+          <div className="space-y-6">
+            {/* Passo a passo */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Info className="h-5 w-5" /> Como integrar o Bot de Cobrança
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ol className="space-y-3 text-sm text-muted-foreground">
+                  <li className="flex gap-3">
+                    <Badge variant="outline" className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs">1</Badge>
+                    <div>
+                      <p className="font-medium text-foreground">Criar conta Meta Business</p>
+                      <p>Acesse <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">business.facebook.com</a> e crie uma conta empresarial.</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <Badge variant="outline" className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs">2</Badge>
+                    <div>
+                      <p className="font-medium text-foreground">Configurar WhatsApp Business API</p>
+                      <p>No Meta Business Suite, vá em <strong>Configurações {'>'} Contas WhatsApp</strong> e configure a API. Você receberá um <strong>Token de acesso</strong> e um <strong>Phone Number ID</strong>.</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <Badge variant="outline" className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs">3</Badge>
+                    <div>
+                      <p className="font-medium text-foreground">Criar Template de Mensagem</p>
+                      <p>No WhatsApp Manager, crie um template de mensagem aprovado pela Meta. Use variáveis como <code className="bg-muted px-1 rounded">{'{'}1{'}'}</code> para nome e <code className="bg-muted px-1 rounded">{'{'}2{'}'}</code> para itens.</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <Badge variant="outline" className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs">4</Badge>
+                    <div>
+                      <p className="font-medium text-foreground">Preencher os campos abaixo</p>
+                      <p>Cole o Token, Phone Number ID, sua chave PIX e personalize a mensagem de cobrança. Ative o bot e pronto!</p>
+                    </div>
+                  </li>
+                </ol>
+              </CardContent>
+            </Card>
+
+            {/* WhatsApp API Config */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" /> Configurações da API WhatsApp
+                </CardTitle>
+                <CardDescription>Credenciais da API oficial do WhatsApp Business (Meta).</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Token de Acesso (WhatsApp API)</Label>
+                    <Input
+                      type="password"
+                      value={billingSettings.whatsapp_token}
+                      onChange={e => setBillingSettings(s => ({ ...s, whatsapp_token: e.target.value }))}
+                      placeholder="EAAxxxxxxx..."
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Token permanente da API do WhatsApp Business</p>
+                  </div>
+                  <div>
+                    <Label>Phone Number ID</Label>
+                    <Input
+                      value={billingSettings.phone_number_id}
+                      onChange={e => setBillingSettings(s => ({ ...s, phone_number_id: e.target.value }))}
+                      placeholder="123456789012345"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">ID do número no WhatsApp Business API</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* PIX Config */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">💰 Chave PIX</CardTitle>
+                <CardDescription>Chave PIX que será enviada nas mensagens de cobrança.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Chave PIX</Label>
+                    <Input
+                      value={billingSettings.pix_key}
+                      onChange={e => setBillingSettings(s => ({ ...s, pix_key: e.target.value }))}
+                      placeholder="email@email.com, CPF, telefone ou chave aleatória"
+                    />
+                  </div>
+                  <div>
+                    <Label>Nome do titular</Label>
+                    <Input
+                      value={billingSettings.pix_name}
+                      onChange={e => setBillingSettings(s => ({ ...s, pix_name: e.target.value }))}
+                      placeholder="Nome que aparece no PIX"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Message Template */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">📝 Mensagem de Cobrança</CardTitle>
+                <CardDescription>Personalize a mensagem enviada pelo bot. Use as variáveis abaixo.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="text-xs">{'{nome}'} = nome do cliente</Badge>
+                  <Badge variant="secondary" className="text-xs">{'{itens}'} = lista de itens</Badge>
+                  <Badge variant="secondary" className="text-xs">{'{pix}'} = chave PIX</Badge>
+                  <Badge variant="secondary" className="text-xs">{'{pix_nome}'} = titular do PIX</Badge>
+                </div>
+                <Textarea
+                  rows={5}
+                  value={billingSettings.billing_message}
+                  onChange={e => setBillingSettings(s => ({ ...s, billing_message: e.target.value }))}
+                  placeholder="Olá {nome}! Passando para lembrar..."
+                />
+                <div className="bg-muted/50 rounded-lg p-3 border">
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Pré-visualização:</p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {billingSettings.billing_message
+                      .replace('{nome}', 'Maria Silva')
+                      .replace('{itens}', '2x Morango, 1x Maracujá')
+                      .replace('{pix}', billingSettings.pix_key || 'sua-chave-pix')
+                      .replace('{pix_nome}', billingSettings.pix_name || 'Seu Nome')
+                    }
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Toggle + Save */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={billingSettings.billing_enabled}
+                      onCheckedChange={v => setBillingSettings(s => ({ ...s, billing_enabled: v }))}
+                    />
+                    <div>
+                      <p className="font-medium text-sm">Ativar Bot de Cobrança</p>
+                      <p className="text-xs text-muted-foreground">O bot enviará cobranças automaticamente na data programada</p>
+                    </div>
+                  </div>
+                  <Button onClick={saveBillingSettings} disabled={savingSettings}>
+                    {savingSettings ? 'Salvando...' : 'Salvar Configurações'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </AdminLayout>
