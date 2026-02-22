@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_settings: {
+        Row: {
+          billing_enabled: boolean
+          billing_message: string | null
+          created_at: string
+          id: string
+          phone_number_id: string | null
+          pix_key: string | null
+          pix_name: string | null
+          updated_at: string
+          whatsapp_token: string | null
+        }
+        Insert: {
+          billing_enabled?: boolean
+          billing_message?: string | null
+          created_at?: string
+          id?: string
+          phone_number_id?: string | null
+          pix_key?: string | null
+          pix_name?: string | null
+          updated_at?: string
+          whatsapp_token?: string | null
+        }
+        Update: {
+          billing_enabled?: boolean
+          billing_message?: string | null
+          created_at?: string
+          id?: string
+          phone_number_id?: string | null
+          pix_key?: string | null
+          pix_name?: string | null
+          updated_at?: string
+          whatsapp_token?: string | null
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           active: boolean
