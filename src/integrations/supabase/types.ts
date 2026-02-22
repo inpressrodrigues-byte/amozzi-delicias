@@ -238,34 +238,49 @@ export type Database = {
       }
       remote_orders: {
         Row: {
+          billing_date: string | null
+          billing_sent: boolean
           created_at: string
           customer_name: string
+          customer_whatsapp: string | null
+          delivered: boolean
           id: string
           items: Json
           notes: string | null
           paid: boolean
+          payment_status: string
           sector: string
           separated: boolean
           updated_at: string
         }
         Insert: {
+          billing_date?: string | null
+          billing_sent?: boolean
           created_at?: string
           customer_name: string
+          customer_whatsapp?: string | null
+          delivered?: boolean
           id?: string
           items?: Json
           notes?: string | null
           paid?: boolean
+          payment_status?: string
           sector?: string
           separated?: boolean
           updated_at?: string
         }
         Update: {
+          billing_date?: string | null
+          billing_sent?: boolean
           created_at?: string
           customer_name?: string
+          customer_whatsapp?: string | null
+          delivered?: boolean
           id?: string
           items?: Json
           notes?: string | null
           paid?: boolean
+          payment_status?: string
           sector?: string
           separated?: boolean
           updated_at?: string
