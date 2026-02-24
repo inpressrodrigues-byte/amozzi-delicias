@@ -276,6 +276,7 @@ export type Database = {
         Row: {
           billing_date: string | null
           billing_sent: boolean
+          billing_status: string
           created_at: string
           customer_name: string
           customer_whatsapp: string | null
@@ -292,6 +293,7 @@ export type Database = {
         Insert: {
           billing_date?: string | null
           billing_sent?: boolean
+          billing_status?: string
           created_at?: string
           customer_name: string
           customer_whatsapp?: string | null
@@ -308,6 +310,7 @@ export type Database = {
         Update: {
           billing_date?: string | null
           billing_sent?: boolean
+          billing_status?: string
           created_at?: string
           customer_name?: string
           customer_whatsapp?: string | null

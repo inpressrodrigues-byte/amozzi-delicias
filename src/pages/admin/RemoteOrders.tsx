@@ -14,7 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
-import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info } from 'lucide-react';
+import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -27,9 +27,15 @@ interface SelectedItem {
 }
 
 const PAYMENT_OPTIONS = [
-  { value: 'nao_pago', label: '❌ Não pago', variant: 'destructive' as const },
-  { value: 'pago_pix', label: '✅ Pago PIX', variant: 'default' as const },
-  { value: 'pago_dinheiro', label: '💵 Pago Dinheiro', variant: 'default' as const },
+  { value: 'nao_pago', label: 'Não pago', variant: 'destructive' as const },
+  { value: 'pago_pix', label: 'Pago PIX', variant: 'default' as const },
+  { value: 'pago_dinheiro', label: 'Pago Dinheiro', variant: 'default' as const },
+];
+
+const BILLING_STATUS_OPTIONS = [
+  { value: 'pendente', label: 'Pendente', icon: Clock, color: 'text-amber-600 bg-amber-50 border-amber-200' },
+  { value: 'cobrado', label: 'Cobrado', icon: Send, color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  { value: 'pago', label: 'Pago', icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
 ];
 
 // ── Main Component ──
@@ -141,11 +147,24 @@ const RemoteOrders = () => {
   };
 
   const updatePaymentStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from('remote_orders').update({
-      payment_status: status,
-      paid: status !== 'nao_pago',
-    }).eq('id', id);
+    const updateData: any = { payment_status: status, paid: status !== 'nao_pago' };
+    if (status !== 'nao_pago') {
+      updateData.billing_status = 'pago';
+    }
+    const { error } = await supabase.from('remote_orders').update(updateData).eq('id', id);
     if (error) { toast.error('Erro ao atualizar'); return; }
+    queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+  };
+
+  const updateBillingStatus = async (id: string, status: string) => {
+    const updateData: any = { billing_status: status };
+    if (status === 'pago') {
+      updateData.payment_status = 'pago_pix';
+      updateData.paid = true;
+    }
+    const { error } = await supabase.from('remote_orders').update(updateData).eq('id', id);
+    if (error) { toast.error('Erro ao atualizar'); return; }
+    toast.success(status === 'cobrado' ? 'Marcado como cobrado!' : status === 'pago' ? 'Marcado como pago!' : 'Status atualizado');
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
   };
 
@@ -198,6 +217,14 @@ const RemoteOrders = () => {
   const activeOrders = orders?.filter(o => !o.delivered);
   const deliveredOrders = orders?.filter(o => o.delivered);
 
+  // Para cobrar: delivered orders with billing_date set, not yet paid
+  const paraCobrar = deliveredOrders?.filter(o => 
+    o.billing_date && (o as any).billing_status !== 'pago'
+  ) || [];
+
+  const cobrados = paraCobrar.filter(o => (o as any).billing_status === 'cobrado');
+  const pendentes = paraCobrar.filter(o => (o as any).billing_status === 'pendente');
+
   const filteredOrders = activeOrders?.filter(order => {
     if (filterName && !order.customer_name.toLowerCase().includes(filterName.toLowerCase())) return false;
     if (filterPayment !== 'all' && order.payment_status !== filterPayment) return false;
@@ -214,299 +241,373 @@ const RemoteOrders = () => {
 
   const getPaymentBadge = (status: string) => {
     const opt = PAYMENT_OPTIONS.find(o => o.value === status) || PAYMENT_OPTIONS[0];
-    return <Badge variant={opt.variant} className="text-xs">{opt.label}</Badge>;
+    return <Badge variant={opt.variant} className="text-[11px] font-medium">{opt.label}</Badge>;
   };
 
-  // ── Order Card Sub-Component ──
+  const getBillingStatusBadge = (status: string) => {
+    const opt = BILLING_STATUS_OPTIONS.find(o => o.value === status) || BILLING_STATUS_OPTIONS[0];
+    const Icon = opt.icon;
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${opt.color}`}>
+        <Icon className="h-3.5 w-3.5" />
+        {opt.label}
+      </span>
+    );
+  };
+
+  // ── Order Card ──
   const OrderCard = ({ order, showBillingControls = false }: { order: any; showBillingControls?: boolean }) => {
     const items = Array.isArray(order.items) ? order.items as any[] : [];
     return (
-      <Card key={order.id}>
-        <CardContent className="pt-4 pb-3">
-          <div className="flex items-start justify-between flex-wrap gap-2">
-            <div>
-              <p className="font-semibold">{order.customer_name}</p>
-              {order.sector && <p className="text-xs text-muted-foreground">Setor: {order.sector}</p>}
-              {order.customer_whatsapp && <p className="text-xs text-muted-foreground">📱 {order.customer_whatsapp}</p>}
-              <p className="text-xs text-muted-foreground mt-1">
-                {format(new Date(order.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-              </p>
+      <div key={order.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-semibold text-sm">{order.customer_name}</p>
+            <div className="flex items-center gap-3 mt-0.5">
+              {order.sector && <span className="text-[11px] text-muted-foreground">{order.sector}</span>}
+              {order.customer_whatsapp && <span className="text-[11px] text-muted-foreground">📱 {order.customer_whatsapp}</span>}
             </div>
-            <div className="flex items-center gap-2">
-              {getPaymentBadge(order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'))}
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOrder(order.id)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {format(new Date(order.created_at), "dd/MM/yy · HH:mm", { locale: ptBR })}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {getPaymentBadge(order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'))}
+            <button onClick={() => deleteOrder(order.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {items.map((item: any, i: number) => (
+            <span key={i} className="inline-flex items-center gap-1.5 text-[12px] bg-muted/50 px-2 py-1 rounded-md">
+              {item.image_url && <img src={item.image_url} alt={item.name} className="w-4 h-4 rounded object-cover" />}
+              {item.quantity}x {item.name}
+            </span>
+          ))}
+        </div>
+
+        {order.notes && <p className="text-[11px] text-muted-foreground italic">Obs: {order.notes}</p>}
+
+        {!showBillingControls ? (
+          <div className="flex items-center gap-3 pt-2 border-t border-border flex-wrap">
+            <Select
+              value={order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago')}
+              onValueChange={v => updatePaymentStatus(order.id, v)}
+            >
+              <SelectTrigger className="h-8 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <label className="flex items-center gap-1.5 text-[12px] cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+              <Checkbox checked={order.separated} onCheckedChange={v => toggleSeparated(order.id, v === true)} className="h-3.5 w-3.5" />
+              Separado
+            </label>
+            <label className="flex items-center gap-1.5 text-[12px] cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+              <Checkbox checked={order.delivered} onCheckedChange={v => toggleDelivered(order.id, v === true)} className="h-3.5 w-3.5" />
+              Entregue
+            </label>
+          </div>
+        ) : (
+          <div className="pt-2 border-t border-border space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {getBillingStatusBadge((order as any).billing_status || 'pendente')}
+              {order.billing_date && (
+                <span className="text-[11px] text-muted-foreground">
+                  Cobrança: {format(new Date(order.billing_date + 'T12:00:00'), "dd/MM/yy", { locale: ptBR })}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Input
+                type="date"
+                className="h-8 w-36 text-[11px]"
+                value={order.billing_date || ''}
+                onChange={e => updateBillingDate(order.id, e.target.value)}
+              />
+              {(order as any).billing_status === 'pendente' && (
+                <Button variant="outline" size="sm" className="h-8 text-[11px]" onClick={() => updateBillingStatus(order.id, 'cobrado')}>
+                  <Send className="h-3 w-3 mr-1" /> Marcar Cobrado
+                </Button>
+              )}
+              {(order as any).billing_status === 'cobrado' && (
+                <Button variant="outline" size="sm" className="h-8 text-[11px] border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={() => updateBillingStatus(order.id, 'pago')}>
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Marcar Pago
+                </Button>
+              )}
+              {order.payment_status === 'nao_pago' && (order as any).billing_status !== 'pago' && (
+                <Select value={order.payment_status} onValueChange={v => updatePaymentStatus(order.id, v)}>
+                  <SelectTrigger className="h-8 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
-
-          <div className="mt-2 space-y-1">
-            {items.map((item: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 text-sm">
-                {item.image_url && (
-                  <img src={item.image_url} alt={item.name} className="w-8 h-8 rounded object-cover" />
-                )}
-                <span>{item.quantity}x {item.name}</span>
-              </div>
-            ))}
-          </div>
-
-          {order.notes && <p className="text-xs text-muted-foreground mt-1 italic">Obs: {order.notes}</p>}
-
-          {!showBillingControls ? (
-            <div className="mt-3 flex items-center gap-4 border-t pt-3 flex-wrap">
-              <Select
-                value={order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago')}
-                onValueChange={v => updatePaymentStatus(order.id, v)}
-              >
-                <SelectTrigger className="h-8 w-40 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_OPTIONS.map(o => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox checked={order.separated} onCheckedChange={v => toggleSeparated(order.id, v === true)} />
-                Separado
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox checked={order.delivered} onCheckedChange={v => toggleDelivered(order.id, v === true)} />
-                Entregue
-              </label>
-            </div>
-          ) : (
-            <div className="mt-3 border-t pt-3 space-y-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                {getPaymentBadge(order.payment_status || 'nao_pago')}
-                {order.payment_status === 'nao_pago' && (
-                  <Select value={order.payment_status} onValueChange={v => updatePaymentStatus(order.id, v)}>
-                    <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PAYMENT_OPTIONS.map(o => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Label className="text-xs whitespace-nowrap">Data cobrança:</Label>
-                <Input
-                  type="date"
-                  className="h-8 w-40 text-xs"
-                  value={order.billing_date || ''}
-                  onChange={e => updateBillingDate(order.id, e.target.value)}
-                />
-                {order.billing_sent && <Badge variant="outline" className="text-xs">📩 Enviada</Badge>}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </div>
     );
   };
 
   // ── Render ──
   return (
     <AdminLayout>
-      <h1 className="font-display text-3xl font-bold mb-6">Pedidos Remotos</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>Pedidos Remotos</h1>
+        <p className="text-sm text-muted-foreground mt-1">Gerencie pedidos manuais e cobranças</p>
+      </div>
 
       <Tabs defaultValue="new" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
-          <TabsTrigger value="new">Novo Pedido</TabsTrigger>
-          <TabsTrigger value="list">
+        <TabsList className="bg-muted/50 p-1 h-auto flex-wrap">
+          <TabsTrigger value="new" className="text-xs data-[state=active]:bg-background">Novo Pedido</TabsTrigger>
+          <TabsTrigger value="list" className="text-xs data-[state=active]:bg-background">
             Pedidos {activeOrders?.length ? `(${activeOrders.length})` : ''}
           </TabsTrigger>
-          <TabsTrigger value="history">
-            <History className="h-4 w-4 mr-1" /> Histórico
+          <TabsTrigger value="billing" className="text-xs data-[state=active]:bg-background">
+            <AlertCircle className="h-3.5 w-3.5 mr-1" />
+            Para Cobrar {paraCobrar.length > 0 ? `(${paraCobrar.length})` : ''}
           </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings2 className="h-4 w-4 mr-1" /> Config
+          <TabsTrigger value="history" className="text-xs data-[state=active]:bg-background">
+            <History className="h-3.5 w-3.5 mr-1" /> Histórico
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs data-[state=active]:bg-background">
+            <Settings2 className="h-3.5 w-3.5 mr-1" /> Config
           </TabsTrigger>
         </TabsList>
 
         {/* ===== NEW ORDER TAB ===== */}
         <TabsContent value="new">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Registrar Pedido Remoto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-card border border-border rounded-xl p-5 space-y-5">
+            <div>
+              <h2 className="text-sm font-semibold mb-3">Informações do cliente</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <Label>Nome *</Label>
-                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do cliente" />
+                  <Label className="text-[11px]">Nome *</Label>
+                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do cliente" className="h-9" />
                 </div>
                 <div>
-                  <Label>Setor</Label>
-                  <Input value={sector} onChange={e => setSector(e.target.value)} placeholder="Ex: Financeiro, RH..." />
+                  <Label className="text-[11px]">Setor</Label>
+                  <Input value={sector} onChange={e => setSector(e.target.value)} placeholder="Ex: Financeiro" className="h-9" />
                 </div>
                 <div>
-                  <Label>WhatsApp</Label>
-                  <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="5511999999999" />
+                  <Label className="text-[11px]">WhatsApp</Label>
+                  <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="5511999999999" className="h-9" />
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Observações</Label>
-                  <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Alguma observação..." />
-                </div>
-                <div>
-                  <Label>Pagamento</Label>
-                  <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PAYMENT_OPTIONS.map(o => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Product catalog with thumbnails */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-base font-semibold">Sabores</Label>
-                {categories.map(cat => (
-                  <div key={cat} className="mt-3">
-                    <p className="text-sm font-medium text-muted-foreground mb-2 capitalize">{cat.replace(/_/g, ' ')}</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {products?.filter(p => p.category === cat).map(product => {
-                        const sel = selectedItems.find(i => i.product_id === product.id);
-                        return (
-                          <button
-                            key={product.id}
-                            onClick={() => addItem(product)}
-                            className={`relative flex items-center gap-2 text-left p-2 rounded-lg border transition-all text-sm ${
-                              sel
-                                ? 'border-primary bg-primary/10 ring-1 ring-primary'
-                                : 'border-border hover:border-primary/50'
-                            }`}
-                          >
-                            {product.image_url ? (
-                              <img src={product.image_url} alt={product.description || product.name} className="w-10 h-10 rounded-md object-cover shrink-0" />
-                            ) : (
-                              <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
-                                <Package className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            )}
-                            <span className="font-medium leading-tight">{product.description || product.name}</span>
-                            {sel && (
-                              <Badge className="absolute top-1 right-1 text-[10px] px-1.5">{sel.quantity}</Badge>
-                            )}
-                          </button>
-                        );
-                      })}
+                <Label className="text-[11px]">Observações</Label>
+                <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Alguma observação..." className="h-9" />
+              </div>
+              <div>
+                <Label className="text-[11px]">Pagamento</Label>
+                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Product catalog */}
+            <div>
+              <h2 className="text-sm font-semibold mb-3">Sabores</h2>
+              {categories.map(cat => (
+                <div key={cat} className="mb-4">
+                  <p className="text-[11px] font-medium text-muted-foreground mb-2 uppercase tracking-wider">{cat.replace(/_/g, ' ')}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {products?.filter(p => p.category === cat).map(product => {
+                      const sel = selectedItems.find(i => i.product_id === product.id);
+                      return (
+                        <button
+                          key={product.id}
+                          onClick={() => addItem(product)}
+                          className={`relative flex items-center gap-2 text-left p-2 rounded-lg border transition-all text-[12px] ${
+                            sel
+                              ? 'border-foreground bg-foreground/5'
+                              : 'border-border hover:border-foreground/30'
+                          }`}
+                        >
+                          {product.image_url ? (
+                            <img src={product.image_url} alt={product.description || product.name} className="w-9 h-9 rounded-md object-cover shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                              <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <span className="font-medium leading-tight">{product.description || product.name}</span>
+                          {sel && (
+                            <span className="absolute -top-1.5 -right-1.5 bg-foreground text-background text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                              {sel.quantity}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Selected items */}
+            {selectedItems.length > 0 && (
+              <div className="border border-border rounded-lg p-3 space-y-2 bg-muted/30">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Resumo</p>
+                {selectedItems.map(item => (
+                  <div key={item.product_id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      {item.image_url && <img src={item.image_url} alt={item.name} className="w-5 h-5 rounded object-cover" />}
+                      <span className="text-[12px]">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => updateQty(item.product_id, -1)} className="h-6 w-6 rounded border border-border flex items-center justify-center hover:bg-muted transition-colors">
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="w-5 text-center text-[12px] font-semibold">{item.quantity}</span>
+                      <button onClick={() => updateQty(item.product_id, 1)} className="h-6 w-6 rounded border border-border flex items-center justify-center hover:bg-muted transition-colors">
+                        <Plus className="h-3 w-3" />
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
+            )}
 
-              {/* Selected items summary */}
-              {selectedItems.length > 0 && (
-                <div className="border rounded-lg p-3 space-y-2">
-                  <p className="text-sm font-semibold">Itens selecionados:</p>
-                  {selectedItems.map(item => (
-                    <div key={item.product_id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        {item.image_url && <img src={item.image_url} alt={item.name} className="w-6 h-6 rounded object-cover" />}
-                        <span>{item.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateQty(item.product_id, -1)}>
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="w-6 text-center font-medium">{item.quantity}</span>
-                        <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateQty(item.product_id, 1)}>
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
-                {submitting ? 'Criando...' : 'Criar Pedido Remoto'}
-              </Button>
-            </CardContent>
-          </Card>
+            <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
+              {submitting ? 'Criando...' : 'Criar Pedido'}
+            </Button>
+          </div>
         </TabsContent>
 
         {/* ===== LIST TAB ===== */}
         <TabsContent value="list">
-          <Card className="mb-4">
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Filtros</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div>
-                  <Label className="text-xs">Nome</Label>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input className="pl-7 h-9" value={filterName} onChange={e => setFilterName(e.target.value)} placeholder="Buscar..." />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs">Pagamento</Label>
-                  <Select value={filterPayment} onValueChange={setFilterPayment}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {PAYMENT_OPTIONS.map(o => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Data início</Label>
-                  <Input type="date" className="h-9" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
-                </div>
-                <div>
-                  <Label className="text-xs">Data fim</Label>
-                  <Input type="date" className="h-9" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+          <div className="bg-card border border-border rounded-xl p-4 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filtros</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <Label className="text-[11px]">Nome</Label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input className="pl-8 h-9 text-[12px]" value={filterName} onChange={e => setFilterName(e.target.value)} placeholder="Buscar..." />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <Label className="text-[11px]">Pagamento</Label>
+                <Select value={filterPayment} onValueChange={setFilterPayment}>
+                  <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[11px]">De</Label>
+                <Input type="date" className="h-9 text-[12px]" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-[11px]">Até</Label>
+                <Input type="date" className="h-9 text-[12px]" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+              </div>
+            </div>
+          </div>
 
-          {isLoading ? <p>Carregando...</p> : (
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
+          ) : (
             <div className="space-y-3">
-              {filteredOrders?.map(order => (
-                <OrderCard key={order.id} order={order} />
-              ))}
+              {filteredOrders?.map(order => <OrderCard key={order.id} order={order} />)}
               {filteredOrders?.length === 0 && (
-                <p className="text-muted-foreground text-center py-8">Nenhum pedido ativo encontrado.</p>
+                <p className="text-muted-foreground text-center py-8 text-sm">Nenhum pedido ativo.</p>
               )}
             </div>
           )}
         </TabsContent>
 
+        {/* ===== BILLING TAB ===== */}
+        <TabsContent value="billing">
+          <div className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-4 w-4 text-amber-500" />
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Pendentes</span>
+                </div>
+                <p className="text-2xl font-semibold">{pendentes.length}</p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Send className="h-4 w-4 text-blue-500" />
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Cobrados</span>
+                </div>
+                <p className="text-2xl font-semibold">{cobrados.length}</p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Total p/ cobrar</span>
+                </div>
+                <p className="text-2xl font-semibold">{paraCobrar.length}</p>
+              </div>
+            </div>
+
+            {/* Pendentes */}
+            {pendentes.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-amber-500" /> Aguardando cobrança
+                </h3>
+                <div className="space-y-3">
+                  {pendentes.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
+                </div>
+              </div>
+            )}
+
+            {/* Cobrados */}
+            {cobrados.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Send className="h-4 w-4 text-blue-500" /> Cobrados — aguardando pagamento
+                </h3>
+                <div className="space-y-3">
+                  {cobrados.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
+                </div>
+              </div>
+            )}
+
+            {paraCobrar.length === 0 && (
+              <div className="text-center py-12">
+                <CheckCircle2 className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground">Nenhuma cobrança pendente.</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Defina uma data de cobrança no histórico para os pedidos aparecerem aqui.</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
         {/* ===== HISTORY TAB ===== */}
         <TabsContent value="history">
-          <Card className="mb-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <History className="h-5 w-5" /> Histórico de Entregas
-              </CardTitle>
-              <CardDescription>Pedidos entregues. Configure datas de cobrança e o bot envia automaticamente.</CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground">Pedidos entregues. Defina datas de cobrança para gestão.</p>
+          </div>
 
-          {isLoading ? <p>Carregando...</p> : (
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
+          ) : (
             <div className="space-y-3">
-              {deliveredOrders?.map(order => (
-                <OrderCard key={order.id} order={order} showBillingControls />
-              ))}
+              {deliveredOrders?.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
               {deliveredOrders?.length === 0 && (
-                <p className="text-muted-foreground text-center py-8">Nenhum pedido no histórico ainda.</p>
+                <p className="text-muted-foreground text-center py-8 text-sm">Nenhum pedido no histórico.</p>
               )}
             </div>
           )}
@@ -514,162 +615,122 @@ const RemoteOrders = () => {
 
         {/* ===== SETTINGS TAB ===== */}
         <TabsContent value="settings">
-          <div className="space-y-6">
-            {/* Passo a passo */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Info className="h-5 w-5" /> Como integrar o Bot de Cobrança
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ol className="space-y-3 text-sm text-muted-foreground">
-                  <li className="flex gap-3">
-                    <Badge variant="outline" className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs">1</Badge>
-                    <div>
-                      <p className="font-medium text-foreground">Criar conta Meta Business</p>
-                      <p>Acesse <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">business.facebook.com</a> e crie uma conta empresarial.</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <Badge variant="outline" className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs">2</Badge>
-                    <div>
-                      <p className="font-medium text-foreground">Configurar WhatsApp Business API</p>
-                      <p>No Meta Business Suite, vá em <strong>Configurações {'>'} Contas WhatsApp</strong> e configure a API. Você receberá um <strong>Token de acesso</strong> e um <strong>Phone Number ID</strong>.</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <Badge variant="outline" className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs">3</Badge>
-                    <div>
-                      <p className="font-medium text-foreground">Criar Template de Mensagem</p>
-                      <p>No WhatsApp Manager, crie um template de mensagem aprovado pela Meta. Use variáveis como <code className="bg-muted px-1 rounded">{'{'}1{'}'}</code> para nome e <code className="bg-muted px-1 rounded">{'{'}2{'}'}</code> para itens.</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <Badge variant="outline" className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs">4</Badge>
-                    <div>
-                      <p className="font-medium text-foreground">Preencher os campos abaixo</p>
-                      <p>Cole o Token, Phone Number ID, sua chave PIX e personalize a mensagem de cobrança. Ative o bot e pronto!</p>
-                    </div>
-                  </li>
-                </ol>
-              </CardContent>
-            </Card>
+          <div className="space-y-5">
+            {/* Step by step */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                <Info className="h-4 w-4" /> Como integrar o Bot de Cobrança
+              </h2>
+              <ol className="space-y-3 text-[12px] text-muted-foreground">
+                <li className="flex gap-3">
+                  <span className="shrink-0 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-bold mt-0.5">1</span>
+                  <div>
+                    <p className="font-medium text-foreground">Criar conta Meta Business</p>
+                    <p>Acesse <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="underline text-foreground">business.facebook.com</a> e crie uma conta.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="shrink-0 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-bold mt-0.5">2</span>
+                  <div>
+                    <p className="font-medium text-foreground">Configurar WhatsApp Business API</p>
+                    <p>Em Configurações {'>'} Contas WhatsApp, obtenha o <strong>Token</strong> e o <strong>Phone Number ID</strong>.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="shrink-0 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-bold mt-0.5">3</span>
+                  <div>
+                    <p className="font-medium text-foreground">Criar Template de Mensagem</p>
+                    <p>Crie um template aprovado no WhatsApp Manager.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="shrink-0 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-bold mt-0.5">4</span>
+                  <div>
+                    <p className="font-medium text-foreground">Preencha os campos abaixo e ative o bot</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
 
-            {/* WhatsApp API Config */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" /> Configurações da API WhatsApp
-                </CardTitle>
-                <CardDescription>Credenciais da API oficial do WhatsApp Business (Meta).</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Token de Acesso (WhatsApp API)</Label>
-                    <Input
-                      type="password"
-                      value={billingSettings.whatsapp_token}
-                      onChange={e => setBillingSettings(s => ({ ...s, whatsapp_token: e.target.value }))}
-                      placeholder="EAAxxxxxxx..."
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Token permanente da API do WhatsApp Business</p>
-                  </div>
-                  <div>
-                    <Label>Phone Number ID</Label>
-                    <Input
-                      value={billingSettings.phone_number_id}
-                      onChange={e => setBillingSettings(s => ({ ...s, phone_number_id: e.target.value }))}
-                      placeholder="123456789012345"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">ID do número no WhatsApp Business API</p>
-                  </div>
+            {/* WhatsApp API */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" /> API WhatsApp
+              </h2>
+              <p className="text-[11px] text-muted-foreground mb-4">Credenciais da API oficial do WhatsApp Business (Meta).</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-[11px]">Token de Acesso</Label>
+                  <Input type="password" value={billingSettings.whatsapp_token} onChange={e => setBillingSettings(s => ({ ...s, whatsapp_token: e.target.value }))} placeholder="EAAxxxxxxx..." className="h-9" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <Label className="text-[11px]">Phone Number ID</Label>
+                  <Input value={billingSettings.phone_number_id} onChange={e => setBillingSettings(s => ({ ...s, phone_number_id: e.target.value }))} placeholder="123456789012345" className="h-9" />
+                </div>
+              </div>
+            </div>
 
-            {/* PIX Config */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">💰 Chave PIX</CardTitle>
-                <CardDescription>Chave PIX que será enviada nas mensagens de cobrança.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Chave PIX</Label>
-                    <Input
-                      value={billingSettings.pix_key}
-                      onChange={e => setBillingSettings(s => ({ ...s, pix_key: e.target.value }))}
-                      placeholder="email@email.com, CPF, telefone ou chave aleatória"
-                    />
-                  </div>
-                  <div>
-                    <Label>Nome do titular</Label>
-                    <Input
-                      value={billingSettings.pix_name}
-                      onChange={e => setBillingSettings(s => ({ ...s, pix_name: e.target.value }))}
-                      placeholder="Nome que aparece no PIX"
-                    />
-                  </div>
+            {/* PIX */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h2 className="text-sm font-semibold mb-4">Chave PIX</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-[11px]">Chave PIX</Label>
+                  <Input value={billingSettings.pix_key} onChange={e => setBillingSettings(s => ({ ...s, pix_key: e.target.value }))} placeholder="email, CPF, telefone ou chave aleatória" className="h-9" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <Label className="text-[11px]">Nome do titular</Label>
+                  <Input value={billingSettings.pix_name} onChange={e => setBillingSettings(s => ({ ...s, pix_name: e.target.value }))} placeholder="Nome no PIX" className="h-9" />
+                </div>
+              </div>
+            </div>
 
-            {/* Message Template */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">📝 Mensagem de Cobrança</CardTitle>
-                <CardDescription>Personalize a mensagem enviada pelo bot. Use as variáveis abaixo.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="text-xs">{'{nome}'} = nome do cliente</Badge>
-                  <Badge variant="secondary" className="text-xs">{'{itens}'} = lista de itens</Badge>
-                  <Badge variant="secondary" className="text-xs">{'{pix}'} = chave PIX</Badge>
-                  <Badge variant="secondary" className="text-xs">{'{pix_nome}'} = titular do PIX</Badge>
-                </div>
-                <Textarea
-                  rows={5}
-                  value={billingSettings.billing_message}
-                  onChange={e => setBillingSettings(s => ({ ...s, billing_message: e.target.value }))}
-                  placeholder="Olá {nome}! Passando para lembrar..."
-                />
-                <div className="bg-muted/50 rounded-lg p-3 border">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1">Pré-visualização:</p>
-                  <p className="text-sm whitespace-pre-wrap">
-                    {billingSettings.billing_message
-                      .replace('{nome}', 'Maria Silva')
-                      .replace('{itens}', '2x Morango, 1x Maracujá')
-                      .replace('{pix}', billingSettings.pix_key || 'sua-chave-pix')
-                      .replace('{pix_nome}', billingSettings.pix_name || 'Seu Nome')
-                    }
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Message */}
+            <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+              <h2 className="text-sm font-semibold">Mensagem de Cobrança</h2>
+              <div className="flex flex-wrap gap-1.5">
+                {['{nome}', '{itens}', '{pix}', '{pix_nome}'].map(v => (
+                  <span key={v} className="text-[10px] bg-muted px-2 py-0.5 rounded font-mono">{v}</span>
+                ))}
+              </div>
+              <Textarea
+                rows={4}
+                value={billingSettings.billing_message}
+                onChange={e => setBillingSettings(s => ({ ...s, billing_message: e.target.value }))}
+                placeholder="Olá {nome}! Passando para lembrar..."
+                className="text-[12px]"
+              />
+              <div className="bg-muted/30 rounded-lg p-3 border border-border">
+                <p className="text-[10px] font-semibold text-muted-foreground mb-1 uppercase tracking-wider">Preview</p>
+                <p className="text-[12px] whitespace-pre-wrap">
+                  {billingSettings.billing_message
+                    .replace('{nome}', 'Maria Silva')
+                    .replace('{itens}', '2x Morango, 1x Maracujá')
+                    .replace('{pix}', billingSettings.pix_key || 'sua-chave-pix')
+                    .replace('{pix_nome}', billingSettings.pix_name || 'Seu Nome')
+                  }
+                </p>
+              </div>
+            </div>
 
             {/* Toggle + Save */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={billingSettings.billing_enabled}
-                      onCheckedChange={v => setBillingSettings(s => ({ ...s, billing_enabled: v }))}
-                    />
-                    <div>
-                      <p className="font-medium text-sm">Ativar Bot de Cobrança</p>
-                      <p className="text-xs text-muted-foreground">O bot enviará cobranças automaticamente na data programada</p>
-                    </div>
+            <div className="bg-card border border-border rounded-xl p-5">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={billingSettings.billing_enabled}
+                    onCheckedChange={v => setBillingSettings(s => ({ ...s, billing_enabled: v }))}
+                  />
+                  <div>
+                    <p className="text-sm font-medium">Ativar Bot</p>
+                    <p className="text-[11px] text-muted-foreground">Cobra automaticamente na data programada</p>
                   </div>
-                  <Button onClick={saveBillingSettings} disabled={savingSettings}>
-                    {savingSettings ? 'Salvando...' : 'Salvar Configurações'}
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+                <Button onClick={saveBillingSettings} disabled={savingSettings} size="sm">
+                  {savingSettings ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
