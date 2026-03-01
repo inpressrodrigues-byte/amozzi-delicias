@@ -31,8 +31,20 @@ const Dashboard = () => {
   const { data: remoteOrders } = useQuery({
     queryKey: ['admin-remote-orders'],
     queryFn: async () => {
-      const { data } = await supabase.from('remote_orders').select('items, paid');
-      return data ?? [];
+      const { data: rOrders } = await supabase.from('remote_orders').select('items, paid');
+      if (!rOrders) return [];
+      // Get all product prices to calculate revenue
+      const { data: allProducts } = await supabase.from('products').select('id, price');
+      const priceMap = new Map((allProducts ?? []).map(p => [p.id, Number(p.price)]));
+      return rOrders.map(o => ({
+        ...o,
+        total: Array.isArray(o.items)
+          ? (o.items as any[]).reduce((s: number, i: any) => {
+              const price = Number(i.price) || priceMap.get(i.product_id) || 0;
+              return s + price * (Number(i.quantity) || 1);
+            }, 0)
+          : 0,
+      }));
     },
   });
 
