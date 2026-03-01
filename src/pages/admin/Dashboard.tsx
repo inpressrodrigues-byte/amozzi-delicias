@@ -28,6 +28,14 @@ const Dashboard = () => {
     },
   });
 
+  const { data: remoteOrders } = useQuery({
+    queryKey: ['admin-remote-orders'],
+    queryFn: async () => {
+      const { data } = await supabase.from('remote_orders').select('items, paid');
+      return data ?? [];
+    },
+  });
+
   const { data: expenses } = useQuery({
     queryKey: ['admin-expenses-total'],
     queryFn: async () => {
@@ -36,7 +44,18 @@ const Dashboard = () => {
     },
   });
 
-  const totalRevenue = orders?.reduce((sum, o) => sum + Number(o.total), 0) ?? 0;
+  // Revenue from online orders
+  const onlineRevenue = orders?.reduce((sum, o) => sum + Number(o.total), 0) ?? 0;
+
+  // Revenue from paid remote orders (sum item prices * quantities from products)
+  const remoteRevenue = remoteOrders
+    ?.filter(o => o.paid)
+    .reduce((sum, o) => {
+      const items = Array.isArray(o.items) ? (o.items as any[]) : [];
+      return sum + items.reduce((s: number, i: any) => s + (Number(i.quantity) || 0) * (Number(i.price) || 0), 0);
+    }, 0) ?? 0;
+
+  const totalRevenue = onlineRevenue + remoteRevenue;
   const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) ?? 0;
   const profit = totalRevenue - totalExpenses;
 
