@@ -173,14 +173,6 @@ serve(async (req) => {
     }
 
     if (validatedCouponCode) {
-      await supabase
-        .from("coupons")
-        .update({ uses_count: supabase.rpc as any }) // increment via rpc or direct
-        .eq("code", validatedCouponCode);
-      // Use a raw increment
-      await supabase.rpc("increment_coupon_uses" as any, { p_code: validatedCouponCode }).maybeSingle().catch(() => {
-        // fallback: fetch and update
-      });
       const { data: c } = await supabase.from("coupons").select("uses_count").eq("code", validatedCouponCode).single();
       if (c) {
         await supabase.from("coupons").update({ uses_count: c.uses_count + 1 }).eq("code", validatedCouponCode);
