@@ -89,7 +89,7 @@ const RemoteOrders = () => {
         .from('billing_settings')
         .select('*')
         .limit(1)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
