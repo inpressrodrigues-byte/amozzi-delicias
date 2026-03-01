@@ -61,7 +61,7 @@ const Dashboard = () => {
 
   const stats = [
     { label: 'Produtos', value: products ?? 0, icon: Package, gradient: 'from-pink-500 to-rose-400', bg: 'bg-pink-50' },
-    { label: 'Pedidos', value: orders?.length ?? 0, icon: ShoppingCart, gradient: 'from-amber-500 to-yellow-400', bg: 'bg-amber-50' },
+    { label: 'Pedidos', value: (orders?.length ?? 0) + (remoteOrders?.length ?? 0), icon: ShoppingCart, gradient: 'from-amber-500 to-yellow-400', bg: 'bg-amber-50' },
     { label: 'Receita Total', value: `R$ ${totalRevenue.toFixed(2)}`, icon: TrendingUp, gradient: 'from-emerald-500 to-green-400', bg: 'bg-emerald-50' },
     { label: 'Gastos Totais', value: `R$ ${totalExpenses.toFixed(2)}`, icon: TrendingDown, gradient: 'from-red-500 to-rose-400', bg: 'bg-red-50' },
   ];
