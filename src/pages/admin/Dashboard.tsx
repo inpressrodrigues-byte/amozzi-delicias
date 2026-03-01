@@ -56,16 +56,10 @@ const Dashboard = () => {
     },
   });
 
-  // Revenue from online orders
-  const onlineRevenue = orders?.reduce((sum, o) => sum + Number(o.total), 0) ?? 0;
-
-  // Revenue from paid remote orders (sum item prices * quantities from products)
+  // Revenue from paid remote orders
   const remoteRevenue = remoteOrders
     ?.filter(o => o.paid)
-    .reduce((sum, o) => {
-      const items = Array.isArray(o.items) ? (o.items as any[]) : [];
-      return sum + items.reduce((s: number, i: any) => s + (Number(i.quantity) || 0) * (Number(i.price) || 0), 0);
-    }, 0) ?? 0;
+    .reduce((sum, o) => sum + (o.total || 0), 0) ?? 0;
 
   const totalRevenue = onlineRevenue + remoteRevenue;
   const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) ?? 0;
