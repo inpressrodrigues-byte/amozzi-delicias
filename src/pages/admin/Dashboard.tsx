@@ -28,6 +28,26 @@ const Dashboard = () => {
     },
   });
 
+  const { data: remoteOrders } = useQuery({
+    queryKey: ['admin-remote-orders'],
+    queryFn: async () => {
+      const { data: rOrders } = await supabase.from('remote_orders').select('items, paid');
+      if (!rOrders) return [];
+      // Get all product prices to calculate revenue
+      const { data: allProducts } = await supabase.from('products').select('id, price');
+      const priceMap = new Map((allProducts ?? []).map(p => [p.id, Number(p.price)]));
+      return rOrders.map(o => ({
+        ...o,
+        total: Array.isArray(o.items)
+          ? (o.items as any[]).reduce((s: number, i: any) => {
+              const price = Number(i.price) || priceMap.get(i.product_id) || 0;
+              return s + price * (Number(i.quantity) || 1);
+            }, 0)
+          : 0,
+      }));
+    },
+  });
+
   const { data: expenses } = useQuery({
     queryKey: ['admin-expenses-total'],
     queryFn: async () => {
@@ -36,13 +56,20 @@ const Dashboard = () => {
     },
   });
 
-  const totalRevenue = orders?.reduce((sum, o) => sum + Number(o.total), 0) ?? 0;
+  const onlineRevenue = orders?.reduce((sum, o) => sum + Number(o.total), 0) ?? 0;
+
+  // Revenue from paid remote orders
+  const remoteRevenue = remoteOrders
+    ?.filter(o => o.paid)
+    .reduce((sum, o) => sum + (o.total || 0), 0) ?? 0;
+
+  const totalRevenue = onlineRevenue + remoteRevenue;
   const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) ?? 0;
   const profit = totalRevenue - totalExpenses;
 
   const stats = [
     { label: 'Produtos', value: products ?? 0, icon: Package, gradient: 'from-pink-500 to-rose-400', bg: 'bg-pink-50' },
-    { label: 'Pedidos', value: orders?.length ?? 0, icon: ShoppingCart, gradient: 'from-amber-500 to-yellow-400', bg: 'bg-amber-50' },
+    { label: 'Pedidos', value: (orders?.length ?? 0) + (remoteOrders?.length ?? 0), icon: ShoppingCart, gradient: 'from-amber-500 to-yellow-400', bg: 'bg-amber-50' },
     { label: 'Receita Total', value: `R$ ${totalRevenue.toFixed(2)}`, icon: TrendingUp, gradient: 'from-emerald-500 to-green-400', bg: 'bg-emerald-50' },
     { label: 'Gastos Totais', value: `R$ ${totalExpenses.toFixed(2)}`, icon: TrendingDown, gradient: 'from-red-500 to-rose-400', bg: 'bg-red-50' },
   ];
