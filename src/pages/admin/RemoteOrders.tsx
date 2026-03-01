@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -108,6 +108,47 @@ const RemoteOrders = () => {
     }
   }, [settingsData]);
 
+  // ── Realtime notification sound for new remote orders ──
+  const orderCountRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Track initial count to avoid playing sound on first load
+    if (orders && orderCountRef.current === null) {
+      orderCountRef.current = orders.length;
+    }
+  }, [orders]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('remote-orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'remote_orders' },
+        () => {
+          // Play notification sound
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVoGAACAgICAgICAgICAgICAgICAgICAgICAgICBgYKDhIaHiYqMjY+QkpOUlZaXmJiYmJeWlZSTkZCOjYuKiIeGhIOCgYCAgICAgICAgICAgIGCg4WHiIqLjY6PkZKTlJWWl5iYmJiYl5aVlJKRkI6NjIqJh4aFg4KBgICAgICAgICAgICAgIGCg4WHiIqMjY6QkZKUlZaXmJiYmJiXlpWUk5GQjo2LioiHhoSEgoGAgICAgICAgICAgICBgoOFh4iKjI2PkJGTlJWWl5iYmZiYl5aVlJOSkI+NjIqJh4WEg4KBgICAgICAgIB/f3+AgYKEhYeIiouNjpCRkpOUlZaXmJiYmJeWlZSTkZCOjYuKiYeGhIOCgYCAgICAgICAgICAgIGCg4WHiYqMjY+QkZOUlZaXmJiZmJiXlpWUk5GQjo2Mi4mIhoWEg4KBgICAgICAgICAgICBgoOEhoeJioyNj5CRk5SVlpeYmJmYmJeWlZSTkZCOjYyKiYeGhIOCgYCAgICAgH9/gICAgYKEhoeJioyOj5CRk5SVlpeYmJiYmJeXlZSTkY+OjYuKiIeGhIOCgYCAgICAgICAgICAgIGDhIaHiYuMjY+QkpOUlZaXmJiYmJiXlpWUk5GQj42Mi4mIh4WEg4GAgICAgICAgICAf4CBgoOFh4iKi42Oj5GTlJWWl5eYmJiYl5aVlJOSkI+OjIuJiIeGhIOCgYCAgICAgICAgICAgIGCg4WHiImLjI6PkJKTlJWWl5iYmJiYl5aVlJKRkI6NjIqJh4aFg4KBgICAgICAgICAgICAgYKDhYeIiouNjo+RkpOUlZaXl5iYmJeXlpWUk5GQjo2Mi4mIhoWEg4KBgICAgICAgICAgICBgoSFh4iKi42Oj5GSkpSVlpeYmJiYmJeWlZSTkY+OjYuKiIeGhIOCgYCAgICAgICAgICAgIGChIWHiYqMjY6QkZKUlJaXl5iYmJiXl5aVlJOSkI+NjIuJiIaFhIOCgYCAgICAgICAgICAgoOEhoeJi4yNj5CRk5SVlpaXmJiYmJeWlZSUkpGPjo2LioiHhoWEgoGAgICAgICAgICAgIGCg4WGiImLjI6PkJKTlJWWl5iYmJiYl5aVlJOSkI+NjIuJiIeGhIOCgYCAgICAgICAgICAgYKEhYeJiouNjo+RkpOVlpaXmJiYmJeXlpWUk5GQjo2Mi4mIh4WEg4KBgICAgICAgA==');
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+          toast.success('🔔 Novo pedido remoto recebido!');
+          queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'remote_orders' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   // ── Handlers ──
   const addItem = (product: any) => {
     setSelectedItems(prev => {
@@ -154,6 +195,8 @@ const RemoteOrders = () => {
     const { error } = await supabase.from('remote_orders').update(updateData).eq('id', id);
     if (error) { toast.error('Erro ao atualizar'); return; }
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
   };
 
   const updateBillingStatus = async (id: string, status: string) => {
@@ -166,6 +209,7 @@ const RemoteOrders = () => {
     if (error) { toast.error('Erro ao atualizar'); return; }
     toast.success(status === 'cobrado' ? 'Marcado como cobrado!' : status === 'pago' ? 'Marcado como pago!' : 'Status atualizado');
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
   };
 
   const toggleDelivered = async (id: string, value: boolean) => {
