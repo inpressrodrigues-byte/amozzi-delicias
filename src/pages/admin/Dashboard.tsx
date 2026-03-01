@@ -56,6 +56,8 @@ const Dashboard = () => {
     },
   });
 
+  const onlineRevenue = orders?.reduce((sum, o) => sum + Number(o.total), 0) ?? 0;
+
   // Revenue from paid remote orders
   const remoteRevenue = remoteOrders
     ?.filter(o => o.paid)
