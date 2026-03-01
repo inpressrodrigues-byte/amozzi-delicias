@@ -195,6 +195,8 @@ const RemoteOrders = () => {
     const { error } = await supabase.from('remote_orders').update(updateData).eq('id', id);
     if (error) { toast.error('Erro ao atualizar'); return; }
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
   };
 
   const updateBillingStatus = async (id: string, status: string) => {
