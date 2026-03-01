@@ -209,6 +209,7 @@ const RemoteOrders = () => {
     if (error) { toast.error('Erro ao atualizar'); return; }
     toast.success(status === 'cobrado' ? 'Marcado como cobrado!' : status === 'pago' ? 'Marcado como pago!' : 'Status atualizado');
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
   };
 
   const toggleDelivered = async (id: string, value: boolean) => {
