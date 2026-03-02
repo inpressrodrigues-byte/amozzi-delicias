@@ -23,6 +23,24 @@ const Products = () => {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50' });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [nutritionForm, setNutritionForm] = useState<NutritionData>({ ...defaultNutrition });
+  const { data: nutritionData } = useProductNutrition(editing?.id);
+  const saveNutrition = useSaveNutrition();
+
+  useEffect(() => {
+    if (nutritionData) {
+      setNutritionForm({
+        calories: Number(nutritionData.calories), total_fat: Number(nutritionData.total_fat),
+        saturated_fat: Number(nutritionData.saturated_fat), trans_fat: Number(nutritionData.trans_fat),
+        cholesterol: Number(nutritionData.cholesterol), sodium: Number(nutritionData.sodium),
+        total_carbs: Number(nutritionData.total_carbs), dietary_fiber: Number(nutritionData.dietary_fiber),
+        total_sugars: Number(nutritionData.total_sugars), protein: Number(nutritionData.protein),
+        serving_size: nutritionData.serving_size || '1 pote (200g)',
+      });
+    } else if (!editing) {
+      setNutritionForm({ ...defaultNutrition });
+    }
+  }, [nutritionData, editing]);
 
   const resetForm = () => {
     setForm({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50' });
