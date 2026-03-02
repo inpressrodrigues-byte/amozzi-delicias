@@ -46,6 +46,7 @@ const Products = () => {
     setForm({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50' });
     setImageFile(null);
     setEditing(null);
+    setNutritionForm({ ...defaultNutrition });
   };
 
   const openEdit = (product: any) => {
