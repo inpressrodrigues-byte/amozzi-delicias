@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useProducts } from '@/hooks/useProducts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import NutritionForm from '@/components/admin/NutritionForm';
+import { useProductNutrition, useSaveNutrition, defaultNutrition, type NutritionData } from '@/hooks/useProductNutrition';
 
 const Products = () => {
   const { data: products, isLoading } = useProducts(false);
@@ -21,11 +23,30 @@ const Products = () => {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50' });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [nutritionForm, setNutritionForm] = useState<NutritionData>({ ...defaultNutrition });
+  const { data: nutritionData } = useProductNutrition(editing?.id);
+  const saveNutrition = useSaveNutrition();
+
+  useEffect(() => {
+    if (nutritionData) {
+      setNutritionForm({
+        calories: Number(nutritionData.calories), total_fat: Number(nutritionData.total_fat),
+        saturated_fat: Number(nutritionData.saturated_fat), trans_fat: Number(nutritionData.trans_fat),
+        cholesterol: Number(nutritionData.cholesterol), sodium: Number(nutritionData.sodium),
+        total_carbs: Number(nutritionData.total_carbs), dietary_fiber: Number(nutritionData.dietary_fiber),
+        total_sugars: Number(nutritionData.total_sugars), protein: Number(nutritionData.protein),
+        serving_size: nutritionData.serving_size || '1 pote (200g)',
+      });
+    } else if (!editing) {
+      setNutritionForm({ ...defaultNutrition });
+    }
+  }, [nutritionData, editing]);
 
   const resetForm = () => {
     setForm({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50' });
     setImageFile(null);
     setEditing(null);
+    setNutritionForm({ ...defaultNutrition });
   };
 
   const openEdit = (product: any) => {
@@ -69,16 +90,23 @@ const Products = () => {
       profit_margin_value: parseFloat(form.profit_margin_value) || 0,
     };
 
+    let productId = editing?.id;
+
     if (editing) {
       const { error } = await supabase.from('products').update(payload).eq('id', editing.id);
       if (error) { toast.error('Erro ao atualizar'); return; }
-      toast.success('Produto atualizado!');
     } else {
-      const { error } = await supabase.from('products').insert(payload);
+      const { data: newProduct, error } = await supabase.from('products').insert(payload).select('id').single();
       if (error) { toast.error('Erro ao adicionar'); return; }
-      toast.success('Produto adicionado!');
+      productId = newProduct.id;
     }
 
+    // Save nutrition
+    if (productId) {
+      await saveNutrition.mutateAsync({ productId, nutrition: nutritionForm });
+    }
+
+    toast.success(editing ? 'Produto atualizado!' : 'Produto adicionado!');
     queryClient.invalidateQueries({ queryKey: ['products'] });
     setDialogOpen(false);
     resetForm();
@@ -168,6 +196,7 @@ const Products = () => {
                 <Switch checked={form.available} onCheckedChange={v => setForm(f => ({ ...f, available: v }))} />
                 <Label>Disponível</Label>
               </div>
+              <NutritionForm nutrition={nutritionForm} onChange={setNutritionForm} />
               <Button className="w-full bg-primary" onClick={handleSave}>{editing ? 'Atualizar' : 'Adicionar'}</Button>
             </div>
           </DialogContent>

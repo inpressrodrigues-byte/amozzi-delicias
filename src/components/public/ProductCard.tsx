@@ -4,6 +4,7 @@ import { Plus, Minus, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import NutritionTable from '@/components/public/NutritionTable';
 
 interface Product {
   id: string;
@@ -62,8 +63,9 @@ const ProductCard = ({ product }: { product: Product }) => {
         <div className="p-5">
           <h3 className="font-display text-xl font-bold text-foreground mb-1 leading-tight">{product.name}</h3>
           {product.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{product.description}</p>
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{product.description}</p>
           )}
+          <NutritionTable productId={product.id} />
 
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-primary font-display">
