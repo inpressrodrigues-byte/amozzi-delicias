@@ -4,6 +4,7 @@ import { Plus, Minus, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import NutritionTable from '@/components/public/NutritionTable';
 
 interface Product {
   id: string;
