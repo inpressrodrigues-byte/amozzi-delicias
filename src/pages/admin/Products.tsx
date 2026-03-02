@@ -90,16 +90,23 @@ const Products = () => {
       profit_margin_value: parseFloat(form.profit_margin_value) || 0,
     };
 
+    let productId = editing?.id;
+
     if (editing) {
       const { error } = await supabase.from('products').update(payload).eq('id', editing.id);
       if (error) { toast.error('Erro ao atualizar'); return; }
-      toast.success('Produto atualizado!');
     } else {
-      const { error } = await supabase.from('products').insert(payload);
+      const { data: newProduct, error } = await supabase.from('products').insert(payload).select('id').single();
       if (error) { toast.error('Erro ao adicionar'); return; }
-      toast.success('Produto adicionado!');
+      productId = newProduct.id;
     }
 
+    // Save nutrition
+    if (productId) {
+      await saveNutrition.mutateAsync({ productId, nutrition: nutritionForm });
+    }
+
+    toast.success(editing ? 'Produto atualizado!' : 'Produto adicionado!');
     queryClient.invalidateQueries({ queryKey: ['products'] });
     setDialogOpen(false);
     resetForm();
