@@ -196,6 +196,7 @@ const Products = () => {
                 <Switch checked={form.available} onCheckedChange={v => setForm(f => ({ ...f, available: v }))} />
                 <Label>Disponível</Label>
               </div>
+              <NutritionForm nutrition={nutritionForm} onChange={setNutritionForm} />
               <Button className="w-full bg-primary" onClick={handleSave}>{editing ? 'Atualizar' : 'Adicionar'}</Button>
             </div>
           </DialogContent>
