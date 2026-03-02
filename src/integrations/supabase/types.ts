@@ -200,6 +200,68 @@ export type Database = {
         }
         Relationships: []
       }
+      product_nutrition: {
+        Row: {
+          calories: number | null
+          cholesterol: number | null
+          created_at: string
+          dietary_fiber: number | null
+          id: string
+          product_id: string
+          protein: number | null
+          saturated_fat: number | null
+          serving_size: string | null
+          sodium: number | null
+          total_carbs: number | null
+          total_fat: number | null
+          total_sugars: number | null
+          trans_fat: number | null
+          updated_at: string
+        }
+        Insert: {
+          calories?: number | null
+          cholesterol?: number | null
+          created_at?: string
+          dietary_fiber?: number | null
+          id?: string
+          product_id: string
+          protein?: number | null
+          saturated_fat?: number | null
+          serving_size?: string | null
+          sodium?: number | null
+          total_carbs?: number | null
+          total_fat?: number | null
+          total_sugars?: number | null
+          trans_fat?: number | null
+          updated_at?: string
+        }
+        Update: {
+          calories?: number | null
+          cholesterol?: number | null
+          created_at?: string
+          dietary_fiber?: number | null
+          id?: string
+          product_id?: string
+          protein?: number | null
+          saturated_fat?: number | null
+          serving_size?: string | null
+          sodium?: number | null
+          total_carbs?: number | null
+          total_fat?: number | null
+          total_sugars?: number | null
+          trans_fat?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_nutrition_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           available: boolean
