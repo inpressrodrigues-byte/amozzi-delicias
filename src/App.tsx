@@ -15,6 +15,7 @@ import Orders from "./pages/admin/Orders";
 import Settings from "./pages/admin/Settings";
 import Coupons from "./pages/admin/Coupons";
 import RemoteOrders from "./pages/admin/RemoteOrders";
+import InternalControl from "./pages/admin/InternalControl";
 import TrackOrder from "./pages/TrackOrder";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
