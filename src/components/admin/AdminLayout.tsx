@@ -13,6 +13,7 @@ const navItems = [
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingCart },
   { path: '/admin/coupons', label: 'Cupons', icon: Tag },
   { path: '/admin/remote-orders', label: 'Remotos', icon: ClipboardList },
+  { path: '/admin/internal', label: 'Controle Interno', icon: ClipboardList },
   { path: '/admin/settings', label: 'Personalização', icon: Palette },
 ];
 

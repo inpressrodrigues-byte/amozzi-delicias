@@ -15,6 +15,7 @@ import Orders from "./pages/admin/Orders";
 import Settings from "./pages/admin/Settings";
 import Coupons from "./pages/admin/Coupons";
 import RemoteOrders from "./pages/admin/RemoteOrders";
+import InternalControl from "./pages/admin/InternalControl";
 import TrackOrder from "./pages/TrackOrder";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/admin/settings" element={<Settings />} />
               <Route path="/admin/coupons" element={<Coupons />} />
               <Route path="/admin/remote-orders" element={<RemoteOrders />} />
+              <Route path="/admin/internal" element={<InternalControl />} />
               <Route path="/rastrear" element={<TrackOrder />} />
               <Route path="/rastrear/:code" element={<TrackOrder />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
