@@ -143,6 +143,48 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_records: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          customer_name: string | null
+          date: string
+          description: string
+          id: string
+          notes: string | null
+          supplier: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          customer_name?: string | null
+          date?: string
+          description: string
+          id?: string
+          notes?: string | null
+          supplier?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          customer_name?: string | null
+          date?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          supplier?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
