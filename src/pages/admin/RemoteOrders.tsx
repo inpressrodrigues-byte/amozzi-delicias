@@ -505,7 +505,87 @@ const RemoteOrders = () => {
                 </div>
                 <div>
                   <Label className="text-[11px]">Setor</Label>
-                  <Input value={sector} onChange={e => setSector(e.target.value)} placeholder="Ex: Financeiro" className="h-9" />
+                  <Popover open={sectorPopoverOpen} onOpenChange={setSectorPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center justify-between w-full h-9 px-3 rounded-md border border-input bg-background text-[12px] hover:bg-muted/50 transition-colors"
+                      >
+                        <span className={sector ? 'text-foreground' : 'text-muted-foreground'}>
+                          {sector || 'Selecione o setor'}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-2" align="start">
+                      {/* Existing sectors */}
+                      {sectors.length > 0 ? (
+                        <div className="space-y-0.5 max-h-40 overflow-y-auto mb-2">
+                          {sectors.map(s => (
+                            <div
+                              key={s}
+                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer text-[12px] transition-colors ${
+                                sector === s ? 'bg-foreground text-background' : 'hover:bg-muted'
+                              }`}
+                              onClick={() => { setSector(s); setSectorPopoverOpen(false); }}
+                            >
+                              <span className="flex items-center gap-2">
+                                {sector === s && <Check className="h-3 w-3" />}
+                                {s}
+                              </span>
+                              <button
+                                onClick={e => { e.stopPropagation(); removeSector(s); if (sector === s) setSector(''); }}
+                                className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground text-center py-2 mb-2">Nenhum setor cadastrado</p>
+                      )}
+                      {/* Add new sector */}
+                      <div className="flex gap-1.5 border-t border-border pt-2">
+                        <Input
+                          value={newSectorInput}
+                          onChange={e => setNewSectorInput(e.target.value)}
+                          placeholder="Novo setor..."
+                          className="h-7 text-[11px] flex-1"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && newSectorInput.trim()) {
+                              addSector(newSectorInput);
+                              setSector(newSectorInput.trim());
+                              setNewSectorInput('');
+                            }
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-[10px]"
+                          onClick={() => {
+                            if (newSectorInput.trim()) {
+                              addSector(newSectorInput);
+                              setSector(newSectorInput.trim());
+                              setNewSectorInput('');
+                            }
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {/* Clear selection */}
+                      {sector && (
+                        <button
+                          onClick={() => { setSector(''); setSectorPopoverOpen(false); }}
+                          className="w-full text-[11px] text-muted-foreground hover:text-foreground text-center pt-2 mt-1 border-t border-border"
+                        >
+                          Limpar seleção
+                        </button>
+                      )}
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label className="text-[11px]">WhatsApp</Label>
