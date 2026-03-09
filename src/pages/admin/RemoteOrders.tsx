@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,75 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
-import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+// ── Notification Sound ──
+const playNotificationSound = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    // First ping
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0.3, now);
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc1.connect(gain1).connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.3);
+
+    // Second ping (higher)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1174.66, now + 0.15);
+    gain2.gain.setValueAtTime(0, now);
+    gain2.gain.setValueAtTime(0.3, now + 0.15);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    osc2.connect(gain2).connect(ctx.destination);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.5);
+
+    // Third ping (highest, softer)
+    const osc3 = ctx.createOscillator();
+    const gain3 = ctx.createGain();
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(1318.51, now + 0.3);
+    gain3.gain.setValueAtTime(0, now);
+    gain3.gain.setValueAtTime(0.2, now + 0.3);
+    gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+    osc3.connect(gain3).connect(ctx.destination);
+    osc3.start(now + 0.3);
+    osc3.stop(now + 0.7);
+
+    setTimeout(() => ctx.close(), 1000);
+  } catch {
+    // Fallback: do nothing if AudioContext unavailable
+  }
+};
+
+// ── Sectors Manager ──
+const SECTORS_STORAGE_KEY = 'amozi-sectors';
+const loadSectors = (): string[] => {
+  try {
+    const stored = localStorage.getItem(SECTORS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+const saveSectors = (sectors: string[]) => {
+  localStorage.setItem(SECTORS_STORAGE_KEY, JSON.stringify(sectors));
+};
 
 // ── Types ──
 interface SelectedItem {
