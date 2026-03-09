@@ -170,15 +170,27 @@ const RemoteOrders = () => {
     }
   }, [settingsData]);
 
+  // ── Sectors state ──
+  const [sectors, setSectorsState] = useState<string[]>(loadSectors);
+  const [newSectorInput, setNewSectorInput] = useState('');
+  const [sectorPopoverOpen, setSectorPopoverOpen] = useState(false);
+
+  const addSector = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || sectors.includes(trimmed)) return;
+    const updated = [...sectors, trimmed].sort();
+    setSectorsState(updated);
+    saveSectors(updated);
+  };
+
+  const removeSector = (name: string) => {
+    const updated = sectors.filter(s => s !== name);
+    setSectorsState(updated);
+    saveSectors(updated);
+  };
+
   // ── Realtime notification sound for new remote orders ──
   const orderCountRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    // Track initial count to avoid playing sound on first load
-    if (orders && orderCountRef.current === null) {
-      orderCountRef.current = orders.length;
-    }
-  }, [orders]);
 
   useEffect(() => {
     const channel = supabase
