@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,75 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
-import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+// ── Notification Sound ──
+const playNotificationSound = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    // First ping
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0.3, now);
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc1.connect(gain1).connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.3);
+
+    // Second ping (higher)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1174.66, now + 0.15);
+    gain2.gain.setValueAtTime(0, now);
+    gain2.gain.setValueAtTime(0.3, now + 0.15);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    osc2.connect(gain2).connect(ctx.destination);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.5);
+
+    // Third ping (highest, softer)
+    const osc3 = ctx.createOscillator();
+    const gain3 = ctx.createGain();
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(1318.51, now + 0.3);
+    gain3.gain.setValueAtTime(0, now);
+    gain3.gain.setValueAtTime(0.2, now + 0.3);
+    gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+    osc3.connect(gain3).connect(ctx.destination);
+    osc3.start(now + 0.3);
+    osc3.stop(now + 0.7);
+
+    setTimeout(() => ctx.close(), 1000);
+  } catch {
+    // Fallback: do nothing if AudioContext unavailable
+  }
+};
+
+// ── Sectors Manager ──
+const SECTORS_STORAGE_KEY = 'amozi-sectors';
+const loadSectors = (): string[] => {
+  try {
+    const stored = localStorage.getItem(SECTORS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+const saveSectors = (sectors: string[]) => {
+  localStorage.setItem(SECTORS_STORAGE_KEY, JSON.stringify(sectors));
+};
 
 // ── Types ──
 interface SelectedItem {
@@ -108,15 +170,27 @@ const RemoteOrders = () => {
     }
   }, [settingsData]);
 
+  // ── Sectors state ──
+  const [sectors, setSectorsState] = useState<string[]>(loadSectors);
+  const [newSectorInput, setNewSectorInput] = useState('');
+  const [sectorPopoverOpen, setSectorPopoverOpen] = useState(false);
+
+  const addSector = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || sectors.includes(trimmed)) return;
+    const updated = [...sectors, trimmed].sort();
+    setSectorsState(updated);
+    saveSectors(updated);
+  };
+
+  const removeSector = (name: string) => {
+    const updated = sectors.filter(s => s !== name);
+    setSectorsState(updated);
+    saveSectors(updated);
+  };
+
   // ── Realtime notification sound for new remote orders ──
   const orderCountRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    // Track initial count to avoid playing sound on first load
-    if (orders && orderCountRef.current === null) {
-      orderCountRef.current = orders.length;
-    }
-  }, [orders]);
 
   useEffect(() => {
     const channel = supabase
@@ -125,11 +199,8 @@ const RemoteOrders = () => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'remote_orders' },
         () => {
-          // Play notification sound
-          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVoGAACAgICAgICAgICAgICAgICAgICAgICAgICBgYKDhIaHiYqMjY+QkpOUlZaXmJiYmJeWlZSTkZCOjYuKiIeGhIOCgYCAgICAgICAgICAgIGCg4WHiIqLjY6PkZKTlJWWl5iYmJiYl5aVlJKRkI6NjIqJh4aFg4KBgICAgICAgICAgICAgIGCg4WHiIqMjY6QkZKUlZaXmJiYmJiXlpWUk5GQjo2LioiHhoSEgoGAgICAgICAgICAgICBgoOFh4iKjI2PkJGTlJWWl5iYmZiYl5aVlJOSkI+NjIqJh4WEg4KBgICAgICAgIB/f3+AgYKEhYeIiouNjpCRkpOUlZaXmJiYmJeWlZSTkZCOjYuKiYeGhIOCgYCAgICAgICAgICAgIGCg4WHiYqMjY+QkZOUlZaXmJiZmJiXlpWUk5GQjo2Mi4mIhoWEg4KBgICAgICAgICAgICBgoOEhoeJioyNj5CRk5SVlpeYmJmYmJeWlZSTkZCOjYyKiYeGhIOCgYCAgICAgH9/gICAgYKEhoeJioyOj5CRk5SVlpeYmJiYmJeXlZSTkY+OjYuKiIeGhIOCgYCAgICAgICAgICAgIGDhIaHiYuMjY+QkpOUlZaXmJiYmJiXlpWUk5GQj42Mi4mIh4WEg4GAgICAgICAgICAf4CBgoOFh4iKi42Oj5GTlJWWl5eYmJiYl5aVlJOSkI+OjIuJiIeGhIOCgYCAgICAgICAgICAgIGCg4WHiImLjI6PkJKTlJWWl5iYmJiYl5aVlJKRkI6NjIqJh4aFg4KBgICAgICAgICAgICAgYKDhYeIiouNjo+RkpOUlZaXl5iYmJeXlpWUk5GQjo2Mi4mIhoWEg4KBgICAgICAgICAgICBgoSFh4iKi42Oj5GSkpSVlpeYmJiYmJeWlZSTkY+OjYuKiIeGhIOCgYCAgICAgICAgICAgIGChIWHiYqMjY6QkZKUlJaXl5iYmJiXl5aVlJOSkI+NjIuJiIaFhIOCgYCAgICAgICAgICAgoOEhoeJi4yNj5CRk5SVlpaXmJiYmJeWlZSUkpGPjo2LioiHhoWEgoGAgICAgICAgICAgIGCg4WGiImLjI6PkJKTlJWWl5iYmJiYl5aVlJOSkI+NjIuJiIeGhIOCgYCAgICAgICAgICAgYKEhYeJiouNjo+RkpOVlpaXmJiYmJeXlpWUk5GQjo2Mi4mIh4WEg4KBgICAgICAgA==');
-          audio.volume = 0.5;
-          audio.play().catch(() => {});
-          toast.success('🔔 Novo pedido remoto recebido!');
+          playNotificationSound();
+          toast.success('🔔 Novo pedido remoto recebido!', { duration: 5000 });
           queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
           queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
         }
@@ -399,9 +470,14 @@ const RemoteOrders = () => {
   // ── Render ──
   return (
     <AdminLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>Pedidos Remotos</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gerencie pedidos manuais e cobranças</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>Pedidos Remotos</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gerencie pedidos manuais e cobranças</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={playNotificationSound} className="gap-2 text-xs">
+          <Volume2 className="h-3.5 w-3.5" /> Testar Som
+        </Button>
       </div>
 
       <Tabs defaultValue="new" className="space-y-4">
@@ -434,7 +510,87 @@ const RemoteOrders = () => {
                 </div>
                 <div>
                   <Label className="text-[11px]">Setor</Label>
-                  <Input value={sector} onChange={e => setSector(e.target.value)} placeholder="Ex: Financeiro" className="h-9" />
+                  <Popover open={sectorPopoverOpen} onOpenChange={setSectorPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center justify-between w-full h-9 px-3 rounded-md border border-input bg-background text-[12px] hover:bg-muted/50 transition-colors"
+                      >
+                        <span className={sector ? 'text-foreground' : 'text-muted-foreground'}>
+                          {sector || 'Selecione o setor'}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-2" align="start">
+                      {/* Existing sectors */}
+                      {sectors.length > 0 ? (
+                        <div className="space-y-0.5 max-h-40 overflow-y-auto mb-2">
+                          {sectors.map(s => (
+                            <div
+                              key={s}
+                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer text-[12px] transition-colors ${
+                                sector === s ? 'bg-foreground text-background' : 'hover:bg-muted'
+                              }`}
+                              onClick={() => { setSector(s); setSectorPopoverOpen(false); }}
+                            >
+                              <span className="flex items-center gap-2">
+                                {sector === s && <Check className="h-3 w-3" />}
+                                {s}
+                              </span>
+                              <button
+                                onClick={e => { e.stopPropagation(); removeSector(s); if (sector === s) setSector(''); }}
+                                className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground text-center py-2 mb-2">Nenhum setor cadastrado</p>
+                      )}
+                      {/* Add new sector */}
+                      <div className="flex gap-1.5 border-t border-border pt-2">
+                        <Input
+                          value={newSectorInput}
+                          onChange={e => setNewSectorInput(e.target.value)}
+                          placeholder="Novo setor..."
+                          className="h-7 text-[11px] flex-1"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && newSectorInput.trim()) {
+                              addSector(newSectorInput);
+                              setSector(newSectorInput.trim());
+                              setNewSectorInput('');
+                            }
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-[10px]"
+                          onClick={() => {
+                            if (newSectorInput.trim()) {
+                              addSector(newSectorInput);
+                              setSector(newSectorInput.trim());
+                              setNewSectorInput('');
+                            }
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {/* Clear selection */}
+                      {sector && (
+                        <button
+                          onClick={() => { setSector(''); setSectorPopoverOpen(false); }}
+                          className="w-full text-[11px] text-muted-foreground hover:text-foreground text-center pt-2 mt-1 border-t border-border"
+                        >
+                          Limpar seleção
+                        </button>
+                      )}
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label className="text-[11px]">WhatsApp</Label>
