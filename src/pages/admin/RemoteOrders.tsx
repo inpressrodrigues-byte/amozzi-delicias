@@ -470,9 +470,14 @@ const RemoteOrders = () => {
   // ── Render ──
   return (
     <AdminLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>Pedidos Remotos</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gerencie pedidos manuais e cobranças</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>Pedidos Remotos</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gerencie pedidos manuais e cobranças</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={playNotificationSound} className="gap-2 text-xs">
+          <Volume2 className="h-3.5 w-3.5" /> Testar Som
+        </Button>
       </div>
 
       <Tabs defaultValue="new" className="space-y-4">
