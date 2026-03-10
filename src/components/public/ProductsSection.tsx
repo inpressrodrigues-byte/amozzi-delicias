@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useProducts } from '@/hooks/useProducts';
+import { useProductCategories } from '@/hooks/useProductCategories';
 import ProductCard from './ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 
-const categories = [
-  { key: 'all', label: 'Todos' },
-  { key: 'bolo_no_pote', label: 'Bolos no Pote' },
-  { key: 'marmita_salgada', label: 'Marmitas Salgadas' },
-];
+const ProductsSection = () => {
+  const { data: products, isLoading } = useProducts();
+  const { categories: productCategories } = useProductCategories();
+  const [filter, setFilter] = useState<string>('all');
+
+  const categories = [{ key: 'all', label: 'Todos' }, ...productCategories];
 
 const ProductsSection = () => {
   const { data: products, isLoading } = useProducts();
