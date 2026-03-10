@@ -18,6 +18,7 @@ interface Product {
 
 const ProductCard = ({ product }: { product: Product }) => {
   const { addItem } = useCart();
+  const { getCategoryLabel } = useProductCategories();
   const [quantity, setQuantity] = useState(1);
 
   const handleAdd = () => {
