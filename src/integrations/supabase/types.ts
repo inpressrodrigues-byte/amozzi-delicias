@@ -446,6 +446,7 @@ export type Database = {
           logo_url: string | null
           payment_methods: Json | null
           primary_color: string | null
+          product_categories: Json | null
           secondary_color: string | null
           updated_at: string
           whatsapp_number: string | null
@@ -465,6 +466,7 @@ export type Database = {
           logo_url?: string | null
           payment_methods?: Json | null
           primary_color?: string | null
+          product_categories?: Json | null
           secondary_color?: string | null
           updated_at?: string
           whatsapp_number?: string | null
@@ -484,6 +486,7 @@ export type Database = {
           logo_url?: string | null
           payment_methods?: Json | null
           primary_color?: string | null
+          product_categories?: Json | null
           secondary_color?: string | null
           updated_at?: string
           whatsapp_number?: string | null

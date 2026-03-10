@@ -15,9 +15,11 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import NutritionForm from '@/components/admin/NutritionForm';
 import { useProductNutrition, useSaveNutrition, defaultNutrition, type NutritionData } from '@/hooks/useProductNutrition';
+import { useProductCategories } from '@/hooks/useProductCategories';
 
 const Products = () => {
   const { data: products, isLoading } = useProducts(false);
+  const { categories, getCategoryLabel } = useProductCategories();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -187,8 +189,9 @@ const Products = () => {
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bolo_no_pote">Bolo no Pote</SelectItem>
-                    <SelectItem value="marmita_salgada">Marmita Salgada</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -221,7 +224,7 @@ const Products = () => {
                     {product.available ? 'Disponível' : 'Indisponível'}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">{product.category === 'bolo_no_pote' ? 'Bolo no Pote' : 'Marmita Salgada'}</p>
+                <p className="text-sm text-muted-foreground">{getCategoryLabel(product.category)}</p>
                 <p className="text-sm">Custo: R$ {Number(product.cost).toFixed(2)} | Venda: <strong className="text-primary">R$ {Number(product.price).toFixed(2)}</strong></p>
               </div>
               <div className="flex gap-2">

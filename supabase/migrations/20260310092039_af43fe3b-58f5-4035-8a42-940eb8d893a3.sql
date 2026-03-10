@@ -1,0 +1,1 @@
+ALTER TABLE public.site_settings ADD COLUMN IF NOT EXISTS product_categories jsonb DEFAULT '[{"key":"bolo_no_pote","label":"Bolo no Pote"},{"key":"marmita_salgada","label":"Marmita Salgada"}]'::jsonb;

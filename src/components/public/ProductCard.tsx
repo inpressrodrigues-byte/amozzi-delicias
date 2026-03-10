@@ -5,6 +5,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import NutritionTable from '@/components/public/NutritionTable';
+import { useProductCategories } from '@/hooks/useProductCategories';
 
 interface Product {
   id: string;
@@ -17,6 +18,7 @@ interface Product {
 
 const ProductCard = ({ product }: { product: Product }) => {
   const { addItem } = useCart();
+  const { getCategoryLabel } = useProductCategories();
   const [quantity, setQuantity] = useState(1);
 
   const handleAdd = () => {
@@ -28,7 +30,7 @@ const ProductCard = ({ product }: { product: Product }) => {
     setQuantity(1);
   };
 
-  const categoryLabel = product.category === 'bolo_no_pote' ? 'Bolo no Pote' : 'Marmita Salgada';
+  const categoryLabel = getCategoryLabel(product.category);
 
   return (
     <motion.div
