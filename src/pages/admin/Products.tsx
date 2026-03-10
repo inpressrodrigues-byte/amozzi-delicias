@@ -19,6 +19,7 @@ import { useProductCategories } from '@/hooks/useProductCategories';
 
 const Products = () => {
   const { data: products, isLoading } = useProducts(false);
+  const { categories, getCategoryLabel } = useProductCategories();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
