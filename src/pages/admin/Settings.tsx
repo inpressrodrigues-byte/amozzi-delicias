@@ -37,6 +37,12 @@ const Settings = () => {
     ifood_url: '',
   });
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([
+    { key: 'bolo_no_pote', label: 'Bolo no Pote' },
+    { key: 'marmita_salgada', label: 'Marmita Salgada' },
+  ]);
+  const [newCatKey, setNewCatKey] = useState('');
+  const [newCatLabel, setNewCatLabel] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
