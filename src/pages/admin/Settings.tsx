@@ -63,6 +63,8 @@ const Settings = () => {
       });
       const zones = (settings as any).delivery_zones;
       if (Array.isArray(zones)) setDeliveryZones(zones);
+      const cats = (settings as any).product_categories;
+      if (Array.isArray(cats) && cats.length > 0) setProductCategories(cats);
     }
   }, [settings]);
 
