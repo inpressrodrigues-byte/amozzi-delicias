@@ -224,7 +224,7 @@ const Products = () => {
                     {product.available ? 'Disponível' : 'Indisponível'}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">{product.category === 'bolo_no_pote' ? 'Bolo no Pote' : 'Marmita Salgada'}</p>
+                <p className="text-sm text-muted-foreground">{getCategoryLabel(product.category)}</p>
                 <p className="text-sm">Custo: R$ {Number(product.cost).toFixed(2)} | Venda: <strong className="text-primary">R$ {Number(product.price).toFixed(2)}</strong></p>
               </div>
               <div className="flex gap-2">

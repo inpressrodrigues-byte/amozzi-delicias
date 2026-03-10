@@ -30,7 +30,7 @@ const ProductCard = ({ product }: { product: Product }) => {
     setQuantity(1);
   };
 
-  const categoryLabel = product.category === 'bolo_no_pote' ? 'Bolo no Pote' : 'Marmita Salgada';
+  const categoryLabel = getCategoryLabel(product.category);
 
   return (
     <motion.div

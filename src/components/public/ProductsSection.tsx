@@ -12,7 +12,7 @@ const ProductsSection = () => {
 
   const categories = [{ key: 'all', label: 'Todos' }, ...productCategories];
 
-  // already moved above
+  
 
   const filtered = products?.filter(p =>
     filter === 'all' ? true : p.category === filter
