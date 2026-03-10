@@ -688,9 +688,52 @@ const RemoteOrders = () => {
         {/* ===== LIST TAB ===== */}
         <TabsContent value="list">
           <div className="bg-card border border-border rounded-xl p-4 mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filtros</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filtros</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-[11px] gap-1.5"
+                  onClick={() => {
+                    if (!filteredOrders?.length) { toast.error('Nenhum pedido para exportar'); return; }
+                    const lines = filteredOrders.map((order, i) => {
+                      const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+                      const itemsText = items.map((it: any) => `  • ${it.quantity}x ${it.name}`).join('\n');
+                      const payOpt = PAYMENT_OPTIONS.find(o => o.value === order.payment_status) || PAYMENT_OPTIONS[0];
+                      const pago = payOpt.label;
+                      return `*${i + 1}. ${order.customer_name}*${order.sector ? ` — ${order.sector}` : ''}\n${itemsText}\n💰 ${pago}`;
+                    });
+                    const text = `📋 *Pedidos Remotos*\n${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}\n\n${lines.join('\n\n')}`;
+                    navigator.clipboard.writeText(text).then(() => toast.success('Copiado para a área de transferência!'));
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copiar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-[11px] gap-1.5"
+                  onClick={() => {
+                    if (!filteredOrders?.length) { toast.error('Nenhum pedido para exportar'); return; }
+                    const lines = filteredOrders.map((order, i) => {
+                      const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+                      const itemsText = items.map((it: any) => `  • ${it.quantity}x ${it.name}`).join('\n');
+                      const payOpt = PAYMENT_OPTIONS.find(o => o.value === order.payment_status) || PAYMENT_OPTIONS[0];
+                      const pago = payOpt.label;
+                      return `*${i + 1}. ${order.customer_name}*${order.sector ? ` — ${order.sector}` : ''}\n${itemsText}\n💰 ${pago}`;
+                    });
+                    const text = `📋 *Pedidos Remotos*\n${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}\n\n${lines.join('\n\n')}`;
+                    const encoded = encodeURIComponent(text);
+                    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+                  }}
+                >
+                  <Share2 className="h-3.5 w-3.5" /> WhatsApp
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
