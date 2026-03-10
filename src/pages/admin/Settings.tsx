@@ -205,6 +205,63 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
+              <CardTitle>Categorias de Produtos</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {productCategories.map((cat, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  placeholder="Chave (ex: doces)"
+                  value={cat.key}
+                  onChange={e => setProductCategories(prev => prev.map((c, idx) => idx === i ? { ...c, key: e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') } : c))}
+                  className="w-40"
+                />
+                <Input
+                  placeholder="Nome exibido (ex: Doces)"
+                  value={cat.label}
+                  onChange={e => setProductCategories(prev => prev.map((c, idx) => idx === i ? { ...c, label: e.target.value } : c))}
+                  className="flex-1"
+                />
+                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setProductCategories(prev => prev.filter((_, idx) => idx !== i))}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Chave (ex: salgados)"
+                value={newCatKey}
+                onChange={e => setNewCatKey(e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''))}
+                className="w-40"
+              />
+              <Input
+                placeholder="Nome (ex: Salgados)"
+                value={newCatLabel}
+                onChange={e => setNewCatLabel(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => {
+                  if (newCatKey && newCatLabel) {
+                    setProductCategories(prev => [...prev, { key: newCatKey, label: newCatLabel }]);
+                    setNewCatKey('');
+                    setNewCatLabel('');
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">As categorias aparecem no cardápio público e no formulário de produtos.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
               <CardTitle>Zonas de Entrega (Taxa por Bairro)</CardTitle>
               <Button size="sm" variant="outline" onClick={addZone}><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
             </div>
