@@ -189,8 +189,9 @@ const Products = () => {
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bolo_no_pote">Bolo no Pote</SelectItem>
-                    <SelectItem value="marmita_salgada">Marmita Salgada</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
