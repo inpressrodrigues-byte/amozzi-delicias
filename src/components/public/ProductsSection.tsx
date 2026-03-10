@@ -12,9 +12,7 @@ const ProductsSection = () => {
 
   const categories = [{ key: 'all', label: 'Todos' }, ...productCategories];
 
-const ProductsSection = () => {
-  const { data: products, isLoading } = useProducts();
-  const [filter, setFilter] = useState<string>('all');
+  // already moved above
 
   const filtered = products?.filter(p =>
     filter === 'all' ? true : p.category === filter
