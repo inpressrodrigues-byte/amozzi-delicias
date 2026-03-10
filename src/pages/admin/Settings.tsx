@@ -16,6 +16,11 @@ interface DeliveryZone {
   fee: number;
 }
 
+interface ProductCategory {
+  key: string;
+  label: string;
+}
+
 const Settings = () => {
   const { data: settings, isLoading } = useSiteSettings();
   const queryClient = useQueryClient();
