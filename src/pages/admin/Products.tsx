@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import NutritionForm from '@/components/admin/NutritionForm';
 import { useProductNutrition, useSaveNutrition, defaultNutrition, type NutritionData } from '@/hooks/useProductNutrition';
+import { useProductCategories } from '@/hooks/useProductCategories';
 
 const Products = () => {
   const { data: products, isLoading } = useProducts(false);
