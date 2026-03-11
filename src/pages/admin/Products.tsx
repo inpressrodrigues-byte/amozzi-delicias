@@ -197,6 +197,10 @@ const Products = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Estoque (quantidade)</Label>
+                <Input type="number" step="1" min="0" value={form.stock_quantity} onChange={e => setForm(f => ({ ...f, stock_quantity: e.target.value }))} placeholder="Deixe vazio = ilimitado" />
+              </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.available} onCheckedChange={v => setForm(f => ({ ...f, available: v }))} />
                 <Label>Disponível</Label>
