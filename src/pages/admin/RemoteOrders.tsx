@@ -105,6 +105,17 @@ const RemoteOrders = () => {
   const queryClient = useQueryClient();
   const { data: products } = useProducts(true);
 
+  // Customer database for auto-fill
+  const { data: customerDb } = useQuery({
+    queryKey: ['customers'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('customers').select('*').order('name');
+      if (error) throw error;
+      return data;
+    },
+  });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   // Form state
   const [name, setName] = useState('');
   const [sector, setSector] = useState('');
@@ -266,8 +277,35 @@ const RemoteOrders = () => {
       toast.success('Pedido remoto criado!');
     }
 
+    // Upsert customer in database
+    const purchaseEntry = {
+      date: new Date().toISOString(),
+      items: selectedItems.map(i => ({ name: i.name, quantity: i.quantity })),
+      paid: paymentStatus !== 'nao_pago',
+    };
+    
+    const existingCustomer = customerDb?.find(c => c.name.toLowerCase() === name.trim().toLowerCase());
+    if (existingCustomer) {
+      const oldHistory = Array.isArray(existingCustomer.purchase_history) ? existingCustomer.purchase_history as any[] : [];
+      await supabase.from('customers').update({
+        whatsapp: whatsapp.trim() || existingCustomer.whatsapp,
+        sector: sector.trim() || existingCustomer.sector,
+        purchase_history: [...oldHistory, purchaseEntry],
+        total_orders: (existingCustomer.total_orders || 0) + (editingOrder ? 0 : 1),
+      }).eq('id', existingCustomer.id);
+    } else if (!editingOrder) {
+      await supabase.from('customers').insert({
+        name: name.trim(),
+        whatsapp: whatsapp.trim(),
+        sector: sector.trim(),
+        purchase_history: [purchaseEntry],
+        total_orders: 1,
+      });
+    }
+
     setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
   };
 
   const startEditOrder = (order: any) => {
@@ -552,7 +590,42 @@ const RemoteOrders = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label className="text-[11px]">Nome *</Label>
-                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do cliente" className="h-9" />
+                  <div className="relative">
+                    <Input
+                      value={name}
+                      onChange={e => { setName(e.target.value); setShowSuggestions(true); }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      placeholder="Nome do cliente"
+                      className="h-9"
+                      autoComplete="off"
+                    />
+                    {showSuggestions && name.length >= 2 && (() => {
+                      const matches = customerDb?.filter(c => c.name.toLowerCase().includes(name.toLowerCase())).slice(0, 5);
+                      if (!matches?.length) return null;
+                      return (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+                          {matches.map(c => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-[12px] hover:bg-muted transition-colors flex items-center justify-between"
+                              onMouseDown={e => {
+                                e.preventDefault();
+                                setName(c.name);
+                                setSector(c.sector || '');
+                                setWhatsapp(c.whatsapp || '');
+                                setShowSuggestions(false);
+                              }}
+                            >
+                              <span className="font-medium">{c.name}</span>
+                              <span className="text-muted-foreground text-[10px]">{c.sector || ''} {c.whatsapp ? `· 📱 ${c.whatsapp}` : ''}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
                 <div>
                   <Label className="text-[11px]">Setor</Label>

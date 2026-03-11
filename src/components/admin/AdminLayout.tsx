@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu } from 'lucide-react';
+import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,7 @@ const navItems = [
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingCart },
   { path: '/admin/coupons', label: 'Cupons', icon: Tag },
   { path: '/admin/remote-orders', label: 'Remotos', icon: ClipboardList },
+  { path: '/admin/customers', label: 'Banco de Dados', icon: Database },
   { path: '/admin/internal', label: 'Controle Interno', icon: ClipboardList },
   { path: '/admin/settings', label: 'Personalização', icon: Palette },
 ];
