@@ -23,6 +23,7 @@ export type Database = {
           phone_number_id: string | null
           pix_key: string | null
           pix_name: string | null
+          pix_qr_url: string | null
           updated_at: string
           whatsapp_token: string | null
         }
@@ -34,6 +35,7 @@ export type Database = {
           phone_number_id?: string | null
           pix_key?: string | null
           pix_name?: string | null
+          pix_qr_url?: string | null
           updated_at?: string
           whatsapp_token?: string | null
         }
@@ -45,6 +47,7 @@ export type Database = {
           phone_number_id?: string | null
           pix_key?: string | null
           pix_name?: string | null
+          pix_qr_url?: string | null
           updated_at?: string
           whatsapp_token?: string | null
         }
@@ -317,6 +320,7 @@ export type Database = {
           price: number
           profit_margin_type: string | null
           profit_margin_value: number | null
+          stock_quantity: number | null
           updated_at: string
         }
         Insert: {
@@ -331,6 +335,7 @@ export type Database = {
           price?: number
           profit_margin_type?: string | null
           profit_margin_value?: number | null
+          stock_quantity?: number | null
           updated_at?: string
         }
         Update: {
@@ -345,6 +350,7 @@ export type Database = {
           price?: number
           profit_margin_type?: string | null
           profit_margin_value?: number | null
+          stock_quantity?: number | null
           updated_at?: string
         }
         Relationships: []
