@@ -23,7 +23,7 @@ const Products = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50' });
+  const [form, setForm] = useState({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50', stock_quantity: '' });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [nutritionForm, setNutritionForm] = useState<NutritionData>({ ...defaultNutrition });
   const { data: nutritionData } = useProductNutrition(editing?.id);
@@ -45,7 +45,7 @@ const Products = () => {
   }, [nutritionData, editing]);
 
   const resetForm = () => {
-    setForm({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50' });
+    setForm({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50', stock_quantity: '' });
     setImageFile(null);
     setEditing(null);
     setNutritionForm({ ...defaultNutrition });
@@ -62,6 +62,7 @@ const Products = () => {
       available: product.available,
       profit_margin_type: product.profit_margin_type || 'percentage',
       profit_margin_value: String(product.profit_margin_value || 50),
+      stock_quantity: product.stock_quantity != null ? String(product.stock_quantity) : '',
     });
     setDialogOpen(true);
   };
@@ -90,6 +91,7 @@ const Products = () => {
       image_url,
       profit_margin_type: form.profit_margin_type,
       profit_margin_value: parseFloat(form.profit_margin_value) || 0,
+      stock_quantity: form.stock_quantity !== '' ? parseInt(form.stock_quantity) : null,
     };
 
     let productId = editing?.id;
@@ -195,6 +197,10 @@ const Products = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Estoque (quantidade)</Label>
+                <Input type="number" step="1" min="0" value={form.stock_quantity} onChange={e => setForm(f => ({ ...f, stock_quantity: e.target.value }))} placeholder="Deixe vazio = ilimitado" />
+              </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.available} onCheckedChange={v => setForm(f => ({ ...f, available: v }))} />
                 <Label>Disponível</Label>
@@ -225,7 +231,7 @@ const Products = () => {
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">{getCategoryLabel(product.category)}</p>
-                <p className="text-sm">Custo: R$ {Number(product.cost).toFixed(2)} | Venda: <strong className="text-primary">R$ {Number(product.price).toFixed(2)}</strong></p>
+                <p className="text-sm">Custo: R$ {Number(product.cost).toFixed(2)} | Venda: <strong className="text-primary">R$ {Number(product.price).toFixed(2)}</strong>{product.stock_quantity != null && <span className="ml-2 text-muted-foreground">| Estoque: <strong>{product.stock_quantity}</strong></span>}</p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="icon" onClick={() => openEdit(product)}><Pencil className="h-4 w-4" /></Button>

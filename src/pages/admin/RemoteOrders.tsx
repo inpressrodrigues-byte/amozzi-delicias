@@ -15,7 +15,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
-import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2 } from 'lucide-react';
+import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -113,7 +113,8 @@ const RemoteOrders = () => {
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
+  const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [pixQrFile, setPixQrFile] = useState<File | null>(null);
   // Filter state
   const [filterName, setFilterName] = useState('');
   const [filterPayment, setFilterPayment] = useState<string>('all');
@@ -242,7 +243,8 @@ const RemoteOrders = () => {
     if (!name.trim()) { toast.error('Preencha o nome'); return; }
     if (selectedItems.length === 0) { toast.error('Selecione ao menos um sabor'); return; }
     setSubmitting(true);
-    const { error } = await supabase.from('remote_orders').insert({
+
+    const payload = {
       customer_name: name.trim(),
       sector: sector.trim(),
       customer_whatsapp: whatsapp.trim(),
@@ -250,12 +252,38 @@ const RemoteOrders = () => {
       payment_status: paymentStatus,
       paid: paymentStatus !== 'nao_pago',
       notes: notes.trim(),
-    });
-    setSubmitting(false);
-    if (error) { toast.error('Erro ao criar pedido'); return; }
-    toast.success('Pedido remoto criado!');
-    setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes('');
+    };
+
+    if (editingOrder) {
+      const { error } = await supabase.from('remote_orders').update(payload).eq('id', editingOrder.id);
+      setSubmitting(false);
+      if (error) { toast.error('Erro ao atualizar pedido'); return; }
+      toast.success('Pedido atualizado!');
+    } else {
+      const { error } = await supabase.from('remote_orders').insert(payload);
+      setSubmitting(false);
+      if (error) { toast.error('Erro ao criar pedido'); return; }
+      toast.success('Pedido remoto criado!');
+    }
+
+    setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+  };
+
+  const startEditOrder = (order: any) => {
+    setEditingOrder(order);
+    setName(order.customer_name);
+    setSector(order.sector || '');
+    setWhatsapp(order.customer_whatsapp || '');
+    setPaymentStatus(order.payment_status || 'nao_pago');
+    setNotes(order.notes || '');
+    const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+    setSelectedItems(items.map((i: any) => ({
+      product_id: i.product_id,
+      name: i.name,
+      image_url: i.image_url,
+      quantity: i.quantity,
+    })));
   };
 
   const updatePaymentStatus = async (id: string, status: string) => {
@@ -314,6 +342,17 @@ const RemoteOrders = () => {
   const saveBillingSettings = async () => {
     if (!settingsData?.id) return;
     setSavingSettings(true);
+
+    let pix_qr_url = (settingsData as any).pix_qr_url || null;
+    if (pixQrFile) {
+      const ext = pixQrFile.name.split('.').pop();
+      const path = `pix-qr-${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from('site-assets').upload(path, pixQrFile);
+      if (uploadErr) { toast.error('Erro ao enviar QR Code'); setSavingSettings(false); return; }
+      const { data: urlData } = supabase.storage.from('site-assets').getPublicUrl(path);
+      pix_qr_url = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from('billing_settings').update({
       whatsapp_token: billingSettings.whatsapp_token,
       phone_number_id: billingSettings.phone_number_id,
@@ -321,10 +360,12 @@ const RemoteOrders = () => {
       pix_name: billingSettings.pix_name,
       billing_message: billingSettings.billing_message,
       billing_enabled: billingSettings.billing_enabled,
-    }).eq('id', settingsData.id);
+      pix_qr_url,
+    } as any).eq('id', settingsData.id);
     setSavingSettings(false);
     if (error) { toast.error('Erro ao salvar'); return; }
     toast.success('Configurações salvas!');
+    setPixQrFile(null);
     queryClient.invalidateQueries({ queryKey: ['billing-settings'] });
   };
 
@@ -386,8 +427,13 @@ const RemoteOrders = () => {
               {format(new Date(order.created_at), "dd/MM/yy · HH:mm", { locale: ptBR })}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
             {getPaymentBadge(order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'))}
+            {!showBillingControls && (
+              <button onClick={() => { startEditOrder(order); /* switch to new tab handled by caller */ }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
             <button onClick={() => deleteOrder(order.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -480,9 +526,9 @@ const RemoteOrders = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="new" className="space-y-4">
+      <Tabs defaultValue="new" className="space-y-4" value={editingOrder ? 'new' : undefined}>
         <TabsList className="bg-muted/50 p-1 h-auto flex-wrap">
-          <TabsTrigger value="new" className="text-xs data-[state=active]:bg-background">Novo Pedido</TabsTrigger>
+          <TabsTrigger value="new" className="text-xs data-[state=active]:bg-background">{editingOrder ? '✏️ Editando' : 'Novo Pedido'}</TabsTrigger>
           <TabsTrigger value="list" className="text-xs data-[state=active]:bg-background">
             Pedidos {activeOrders?.length ? `(${activeOrders.length})` : ''}
           </TabsTrigger>
@@ -615,6 +661,15 @@ const RemoteOrders = () => {
               </div>
             </div>
 
+            {/* PIX QR Code display */}
+            {paymentStatus === 'pago_pix' && (settingsData as any)?.pix_qr_url && (
+              <div className="bg-muted/30 border border-border rounded-lg p-4 flex flex-col items-center gap-2">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">QR Code PIX</p>
+                <img src={(settingsData as any).pix_qr_url} alt="QR Code PIX" className="w-48 h-48 object-contain" />
+                {billingSettings.pix_key && <p className="text-[11px] text-muted-foreground">Chave: {billingSettings.pix_key}</p>}
+              </div>
+            )}
+
             {/* Product catalog */}
             <div>
               <h2 className="text-sm font-semibold mb-3">Sabores</h2>
@@ -624,14 +679,19 @@ const RemoteOrders = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {products?.filter(p => p.category === cat).map(product => {
                       const sel = selectedItems.find(i => i.product_id === product.id);
+                      const stock = (product as any).stock_quantity;
+                      const outOfStock = stock != null && stock <= 0;
                       return (
                         <button
                           key={product.id}
-                          onClick={() => addItem(product)}
+                          onClick={() => !outOfStock && addItem(product)}
+                          disabled={outOfStock}
                           className={`relative flex items-center gap-2 text-left p-2 rounded-lg border transition-all text-[12px] ${
-                            sel
-                              ? 'border-foreground bg-foreground/5'
-                              : 'border-border hover:border-foreground/30'
+                            outOfStock
+                              ? 'border-border opacity-50 cursor-not-allowed'
+                              : sel
+                                ? 'border-foreground bg-foreground/5'
+                                : 'border-border hover:border-foreground/30'
                           }`}
                         >
                           {product.image_url ? (
@@ -641,7 +701,14 @@ const RemoteOrders = () => {
                               <Package className="h-3.5 w-3.5 text-muted-foreground" />
                             </div>
                           )}
-                          <span className="font-medium leading-tight">{product.description || product.name}</span>
+                          <div className="min-w-0">
+                            <span className="font-medium leading-tight block">{product.description || product.name}</span>
+                            {stock != null && (
+                              <span className={`text-[10px] ${outOfStock ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                {outOfStock ? 'Esgotado' : `${stock} restantes`}
+                              </span>
+                            )}
+                          </div>
                           {sel && (
                             <span className="absolute -top-1.5 -right-1.5 bg-foreground text-background text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                               {sel.quantity}
@@ -679,9 +746,18 @@ const RemoteOrders = () => {
               </div>
             )}
 
-            <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
-              {submitting ? 'Criando...' : 'Criar Pedido'}
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
+                {submitting ? (editingOrder ? 'Atualizando...' : 'Criando...') : (editingOrder ? 'Atualizar Pedido' : 'Criar Pedido')}
+              </Button>
+              {editingOrder && (
+                <Button variant="outline" onClick={() => {
+                  setEditingOrder(null); setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes('');
+                }}>
+                  Cancelar Edição
+                </Button>
+              )}
+            </div>
           </div>
         </TabsContent>
 
@@ -915,7 +991,9 @@ const RemoteOrders = () => {
 
             {/* PIX */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <h2 className="text-sm font-semibold mb-4">Chave PIX</h2>
+              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                <QrCode className="h-4 w-4" /> Chave PIX
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-[11px]">Chave PIX</Label>
@@ -925,6 +1003,16 @@ const RemoteOrders = () => {
                   <Label className="text-[11px]">Nome do titular</Label>
                   <Input value={billingSettings.pix_name} onChange={e => setBillingSettings(s => ({ ...s, pix_name: e.target.value }))} placeholder="Nome no PIX" className="h-9" />
                 </div>
+              </div>
+              <div className="mt-4">
+                <Label className="text-[11px]">QR Code do PIX (imagem)</Label>
+                {settingsData?.pix_qr_url && (
+                  <div className="my-2">
+                    <img src={settingsData.pix_qr_url} alt="QR Code PIX" className="w-40 h-40 object-contain border border-border rounded-lg" />
+                  </div>
+                )}
+                <Input type="file" accept="image/*" onChange={e => setPixQrFile(e.target.files?.[0] || null)} className="h-9" />
+                <p className="text-[10px] text-muted-foreground mt-1">Faça upload da imagem do QR Code. Ela será exibida quando selecionar "Pago PIX".</p>
               </div>
             </div>
 
