@@ -724,9 +724,18 @@ const RemoteOrders = () => {
               </div>
             )}
 
-            <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
-              {submitting ? 'Criando...' : 'Criar Pedido'}
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
+                {submitting ? (editingOrder ? 'Atualizando...' : 'Criando...') : (editingOrder ? 'Atualizar Pedido' : 'Criar Pedido')}
+              </Button>
+              {editingOrder && (
+                <Button variant="outline" onClick={() => {
+                  setEditingOrder(null); setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes('');
+                }}>
+                  Cancelar Edição
+                </Button>
+              )}
+            </div>
           </div>
         </TabsContent>
 
