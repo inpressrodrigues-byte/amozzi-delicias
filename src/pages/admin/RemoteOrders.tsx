@@ -662,11 +662,14 @@ const RemoteOrders = () => {
                       return (
                         <button
                           key={product.id}
-                          onClick={() => addItem(product)}
+                          onClick={() => !outOfStock && addItem(product)}
+                          disabled={outOfStock}
                           className={`relative flex items-center gap-2 text-left p-2 rounded-lg border transition-all text-[12px] ${
-                            sel
-                              ? 'border-foreground bg-foreground/5'
-                              : 'border-border hover:border-foreground/30'
+                            outOfStock
+                              ? 'border-border opacity-50 cursor-not-allowed'
+                              : sel
+                                ? 'border-foreground bg-foreground/5'
+                                : 'border-border hover:border-foreground/30'
                           }`}
                         >
                           {product.image_url ? (
@@ -676,7 +679,14 @@ const RemoteOrders = () => {
                               <Package className="h-3.5 w-3.5 text-muted-foreground" />
                             </div>
                           )}
-                          <span className="font-medium leading-tight">{product.description || product.name}</span>
+                          <div className="min-w-0">
+                            <span className="font-medium leading-tight block">{product.description || product.name}</span>
+                            {stock != null && (
+                              <span className={`text-[10px] ${outOfStock ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                {outOfStock ? 'Esgotado' : `${stock} restantes`}
+                              </span>
+                            )}
+                          </div>
                           {sel && (
                             <span className="absolute -top-1.5 -right-1.5 bg-foreground text-background text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                               {sel.quantity}
