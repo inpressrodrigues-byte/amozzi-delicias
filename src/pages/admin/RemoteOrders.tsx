@@ -969,7 +969,9 @@ const RemoteOrders = () => {
 
             {/* PIX */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <h2 className="text-sm font-semibold mb-4">Chave PIX</h2>
+              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                <QrCode className="h-4 w-4" /> Chave PIX
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-[11px]">Chave PIX</Label>
@@ -979,6 +981,16 @@ const RemoteOrders = () => {
                   <Label className="text-[11px]">Nome do titular</Label>
                   <Input value={billingSettings.pix_name} onChange={e => setBillingSettings(s => ({ ...s, pix_name: e.target.value }))} placeholder="Nome no PIX" className="h-9" />
                 </div>
+              </div>
+              <div className="mt-4">
+                <Label className="text-[11px]">QR Code do PIX (imagem)</Label>
+                {settingsData?.pix_qr_url && (
+                  <div className="my-2">
+                    <img src={settingsData.pix_qr_url} alt="QR Code PIX" className="w-40 h-40 object-contain border border-border rounded-lg" />
+                  </div>
+                )}
+                <Input type="file" accept="image/*" onChange={e => setPixQrFile(e.target.files?.[0] || null)} className="h-9" />
+                <p className="text-[10px] text-muted-foreground mt-1">Faça upload da imagem do QR Code. Ela será exibida quando selecionar "Pago PIX".</p>
               </div>
             </div>
 
