@@ -563,7 +563,42 @@ const RemoteOrders = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label className="text-[11px]">Nome *</Label>
-                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do cliente" className="h-9" />
+                  <div className="relative">
+                    <Input
+                      value={name}
+                      onChange={e => { setName(e.target.value); setShowSuggestions(true); }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      placeholder="Nome do cliente"
+                      className="h-9"
+                      autoComplete="off"
+                    />
+                    {showSuggestions && name.length >= 2 && (() => {
+                      const matches = customerDb?.filter(c => c.name.toLowerCase().includes(name.toLowerCase())).slice(0, 5);
+                      if (!matches?.length) return null;
+                      return (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+                          {matches.map(c => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-[12px] hover:bg-muted transition-colors flex items-center justify-between"
+                              onMouseDown={e => {
+                                e.preventDefault();
+                                setName(c.name);
+                                setSector(c.sector || '');
+                                setWhatsapp(c.whatsapp || '');
+                                setShowSuggestions(false);
+                              }}
+                            >
+                              <span className="font-medium">{c.name}</span>
+                              <span className="text-muted-foreground text-[10px]">{c.sector || ''} {c.whatsapp ? `· 📱 ${c.whatsapp}` : ''}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
                 <div>
                   <Label className="text-[11px]">Setor</Label>
