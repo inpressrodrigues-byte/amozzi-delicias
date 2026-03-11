@@ -661,6 +661,15 @@ const RemoteOrders = () => {
               </div>
             </div>
 
+            {/* PIX QR Code display */}
+            {paymentStatus === 'pago_pix' && (settingsData as any)?.pix_qr_url && (
+              <div className="bg-muted/30 border border-border rounded-lg p-4 flex flex-col items-center gap-2">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">QR Code PIX</p>
+                <img src={(settingsData as any).pix_qr_url} alt="QR Code PIX" className="w-48 h-48 object-contain" />
+                {billingSettings.pix_key && <p className="text-[11px] text-muted-foreground">Chave: {billingSettings.pix_key}</p>}
+              </div>
+            )}
+
             {/* Product catalog */}
             <div>
               <h2 className="text-sm font-semibold mb-3">Sabores</h2>
