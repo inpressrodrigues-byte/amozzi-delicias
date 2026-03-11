@@ -62,6 +62,7 @@ const Products = () => {
       available: product.available,
       profit_margin_type: product.profit_margin_type || 'percentage',
       profit_margin_value: String(product.profit_margin_value || 50),
+      stock_quantity: product.stock_quantity != null ? String(product.stock_quantity) : '',
     });
     setDialogOpen(true);
   };
