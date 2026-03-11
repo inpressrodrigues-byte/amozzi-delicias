@@ -414,8 +414,13 @@ const RemoteOrders = () => {
               {format(new Date(order.created_at), "dd/MM/yy · HH:mm", { locale: ptBR })}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
             {getPaymentBadge(order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'))}
+            {!showBillingControls && (
+              <button onClick={() => { startEditOrder(order); /* switch to new tab handled by caller */ }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
             <button onClick={() => deleteOrder(order.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
