@@ -105,6 +105,17 @@ const RemoteOrders = () => {
   const queryClient = useQueryClient();
   const { data: products } = useProducts(true);
 
+  // Customer database for auto-fill
+  const { data: customerDb } = useQuery({
+    queryKey: ['customers'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('customers').select('*').order('name');
+      if (error) throw error;
+      return data;
+    },
+  });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   // Form state
   const [name, setName] = useState('');
   const [sector, setSector] = useState('');
