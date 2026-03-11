@@ -657,6 +657,8 @@ const RemoteOrders = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {products?.filter(p => p.category === cat).map(product => {
                       const sel = selectedItems.find(i => i.product_id === product.id);
+                      const stock = (product as any).stock_quantity;
+                      const outOfStock = stock != null && stock <= 0;
                       return (
                         <button
                           key={product.id}
