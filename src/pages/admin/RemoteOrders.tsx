@@ -243,7 +243,8 @@ const RemoteOrders = () => {
     if (!name.trim()) { toast.error('Preencha o nome'); return; }
     if (selectedItems.length === 0) { toast.error('Selecione ao menos um sabor'); return; }
     setSubmitting(true);
-    const { error } = await supabase.from('remote_orders').insert({
+
+    const payload = {
       customer_name: name.trim(),
       sector: sector.trim(),
       customer_whatsapp: whatsapp.trim(),
@@ -251,12 +252,38 @@ const RemoteOrders = () => {
       payment_status: paymentStatus,
       paid: paymentStatus !== 'nao_pago',
       notes: notes.trim(),
-    });
-    setSubmitting(false);
-    if (error) { toast.error('Erro ao criar pedido'); return; }
-    toast.success('Pedido remoto criado!');
-    setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes('');
+    };
+
+    if (editingOrder) {
+      const { error } = await supabase.from('remote_orders').update(payload).eq('id', editingOrder.id);
+      setSubmitting(false);
+      if (error) { toast.error('Erro ao atualizar pedido'); return; }
+      toast.success('Pedido atualizado!');
+    } else {
+      const { error } = await supabase.from('remote_orders').insert(payload);
+      setSubmitting(false);
+      if (error) { toast.error('Erro ao criar pedido'); return; }
+      toast.success('Pedido remoto criado!');
+    }
+
+    setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+  };
+
+  const startEditOrder = (order: any) => {
+    setEditingOrder(order);
+    setName(order.customer_name);
+    setSector(order.sector || '');
+    setWhatsapp(order.customer_whatsapp || '');
+    setPaymentStatus(order.payment_status || 'nao_pago');
+    setNotes(order.notes || '');
+    const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+    setSelectedItems(items.map((i: any) => ({
+      product_id: i.product_id,
+      name: i.name,
+      image_url: i.image_url,
+      quantity: i.quantity,
+    })));
   };
 
   const updatePaymentStatus = async (id: string, status: string) => {
