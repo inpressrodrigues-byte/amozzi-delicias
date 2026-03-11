@@ -113,7 +113,8 @@ const RemoteOrders = () => {
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
+  const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [pixQrFile, setPixQrFile] = useState<File | null>(null);
   // Filter state
   const [filterName, setFilterName] = useState('');
   const [filterPayment, setFilterPayment] = useState<string>('all');
