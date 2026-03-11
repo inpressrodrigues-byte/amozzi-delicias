@@ -277,8 +277,35 @@ const RemoteOrders = () => {
       toast.success('Pedido remoto criado!');
     }
 
+    // Upsert customer in database
+    const purchaseEntry = {
+      date: new Date().toISOString(),
+      items: selectedItems.map(i => ({ name: i.name, quantity: i.quantity })),
+      paid: paymentStatus !== 'nao_pago',
+    };
+    
+    const existingCustomer = customerDb?.find(c => c.name.toLowerCase() === name.trim().toLowerCase());
+    if (existingCustomer) {
+      const oldHistory = Array.isArray(existingCustomer.purchase_history) ? existingCustomer.purchase_history as any[] : [];
+      await supabase.from('customers').update({
+        whatsapp: whatsapp.trim() || existingCustomer.whatsapp,
+        sector: sector.trim() || existingCustomer.sector,
+        purchase_history: [...oldHistory, purchaseEntry],
+        total_orders: (existingCustomer.total_orders || 0) + (editingOrder ? 0 : 1),
+      }).eq('id', existingCustomer.id);
+    } else if (!editingOrder) {
+      await supabase.from('customers').insert({
+        name: name.trim(),
+        whatsapp: whatsapp.trim(),
+        sector: sector.trim(),
+        purchase_history: [purchaseEntry],
+        total_orders: 1,
+      });
+    }
+
     setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
   };
 
   const startEditOrder = (order: any) => {
