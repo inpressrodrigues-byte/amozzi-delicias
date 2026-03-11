@@ -515,7 +515,7 @@ const RemoteOrders = () => {
 
       <Tabs defaultValue="new" className="space-y-4" value={editingOrder ? 'new' : undefined}>
         <TabsList className="bg-muted/50 p-1 h-auto flex-wrap">
-          <TabsTrigger value="new" className="text-xs data-[state=active]:bg-background">Novo Pedido</TabsTrigger>
+          <TabsTrigger value="new" className="text-xs data-[state=active]:bg-background">{editingOrder ? '✏️ Editando' : 'Novo Pedido'}</TabsTrigger>
           <TabsTrigger value="list" className="text-xs data-[state=active]:bg-background">
             Pedidos {activeOrders?.length ? `(${activeOrders.length})` : ''}
           </TabsTrigger>
