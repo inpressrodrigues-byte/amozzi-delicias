@@ -342,6 +342,17 @@ const RemoteOrders = () => {
   const saveBillingSettings = async () => {
     if (!settingsData?.id) return;
     setSavingSettings(true);
+
+    let pix_qr_url = (settingsData as any).pix_qr_url || null;
+    if (pixQrFile) {
+      const ext = pixQrFile.name.split('.').pop();
+      const path = `pix-qr-${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from('site-assets').upload(path, pixQrFile);
+      if (uploadErr) { toast.error('Erro ao enviar QR Code'); setSavingSettings(false); return; }
+      const { data: urlData } = supabase.storage.from('site-assets').getPublicUrl(path);
+      pix_qr_url = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from('billing_settings').update({
       whatsapp_token: billingSettings.whatsapp_token,
       phone_number_id: billingSettings.phone_number_id,
@@ -349,10 +360,12 @@ const RemoteOrders = () => {
       pix_name: billingSettings.pix_name,
       billing_message: billingSettings.billing_message,
       billing_enabled: billingSettings.billing_enabled,
-    }).eq('id', settingsData.id);
+      pix_qr_url,
+    } as any).eq('id', settingsData.id);
     setSavingSettings(false);
     if (error) { toast.error('Erro ao salvar'); return; }
     toast.success('Configurações salvas!');
+    setPixQrFile(null);
     queryClient.invalidateQueries({ queryKey: ['billing-settings'] });
   };
 
