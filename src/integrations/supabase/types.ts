@@ -94,9 +94,13 @@ export type Database = {
       }
       customers: {
         Row: {
+          address: string | null
+          cep: string | null
+          cpf: string | null
           created_at: string
           id: string
           name: string
+          password_hash: string | null
           purchase_history: Json | null
           sector: string | null
           total_orders: number | null
@@ -104,9 +108,13 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          address?: string | null
+          cep?: string | null
+          cpf?: string | null
           created_at?: string
           id?: string
           name: string
+          password_hash?: string | null
           purchase_history?: Json | null
           sector?: string | null
           total_orders?: number | null
@@ -114,9 +122,13 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          address?: string | null
+          cep?: string | null
+          cpf?: string | null
           created_at?: string
           id?: string
           name?: string
+          password_hash?: string | null
           purchase_history?: Json | null
           sector?: string | null
           total_orders?: number | null
