@@ -19,6 +19,7 @@ import InternalControl from "./pages/admin/InternalControl";
 import Customers from "./pages/admin/Customers";
 import TrackOrder from "./pages/TrackOrder";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import MyOrders from "./pages/MyOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="/admin/customers" element={<Customers />} />
               <Route path="/rastrear" element={<TrackOrder />} />
               <Route path="/rastrear/:code" element={<TrackOrder />} />
+              <Route path="/meus-pedidos" element={<MyOrders />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
