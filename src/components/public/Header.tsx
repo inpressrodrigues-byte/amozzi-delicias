@@ -41,9 +41,18 @@ const Header = ({ onCartClick }: { onCartClick: () => void }) => {
           )}
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map(link => (
+          {navLinks.map(link => link.isRoute ? (
+            <Link
+              key={link.href}
+              to={link.href}
+              className={`text-sm font-semibold tracking-wide uppercase transition-colors hover:text-primary ${
+                scrolled ? 'text-foreground' : 'text-white/90'
+              }`}
+            >
+              {link.label}
+            </Link>
+          ) : (
             <a
               key={link.href}
               href={link.href}
