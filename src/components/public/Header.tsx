@@ -98,7 +98,16 @@ const Header = ({ onCartClick }: { onCartClick: () => void }) => {
       {mobileMenuOpen && (
         <div className="md:hidden bg-card/95 backdrop-blur-md border-t border-border">
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-3">
-            {navLinks.map(link => (
+            {navLinks.map(link => link.isRoute ? (
+              <Link
+                key={link.href}
+                to={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-foreground font-semibold py-2 hover:text-primary transition-colors"
+              >
+                {link.label}
+              </Link>
+            ) : (
               <a
                 key={link.href}
                 href={link.href}
