@@ -19,6 +19,7 @@ import InternalControl from "./pages/admin/InternalControl";
 import Customers from "./pages/admin/Customers";
 import TrackOrder from "./pages/TrackOrder";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import MyOrders from "./pages/MyOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
