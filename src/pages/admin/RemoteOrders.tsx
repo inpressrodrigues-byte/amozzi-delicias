@@ -262,6 +262,7 @@ const RemoteOrders = () => {
       items: selectedItems as any,
       payment_status: paymentStatus,
       paid: paymentStatus !== 'nao_pago',
+      billing_status: paymentStatus !== 'nao_pago' ? 'pago' : 'pendente',
       notes: notes.trim(),
     };
 

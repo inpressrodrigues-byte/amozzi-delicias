@@ -165,6 +165,38 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Erro ao criar pedido" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // --- Save customer to database ---
+    const customerName = sanitizeText(customer_name, 100);
+    const { data: existingCustomer } = await supabase
+      .from("customers")
+      .select("id, purchase_history, total_orders, whatsapp")
+      .eq("whatsapp", phone)
+      .maybeSingle();
+
+    const purchaseEntry = {
+      date: new Date().toISOString(),
+      items: orderItems.map((i: any) => ({ name: i.name, quantity: i.quantity })),
+      paid: true,
+      source: "site",
+    };
+
+    if (existingCustomer) {
+      const oldHistory = Array.isArray(existingCustomer.purchase_history) ? existingCustomer.purchase_history as any[] : [];
+      await supabase.from("customers").update({
+        purchase_history: [...oldHistory, purchaseEntry],
+        total_orders: (existingCustomer.total_orders || 0) + 1,
+      }).eq("id", existingCustomer.id);
+    } else {
+      await supabase.from("customers").insert({
+        name: customerName,
+        whatsapp: phone,
+        cep: cep,
+        address: sanitizeText(customer_address, 300),
+        purchase_history: [purchaseEntry],
+        total_orders: 1,
+      });
+    }
+
     // --- Side effects (loyalty + coupon) after successful order creation ---
     await supabase.rpc("increment_loyalty", { p_whatsapp: phone });
 

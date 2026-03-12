@@ -21,6 +21,7 @@ const Header = ({ onCartClick }: { onCartClick: () => void }) => {
     { href: '#produtos', label: 'Cardápio' },
     { href: '#sobre', label: 'Sobre Nós' },
     { href: '#contato', label: 'Contato' },
+    { href: '/meus-pedidos', label: 'Meus Pedidos', isRoute: true },
   ];
 
   return (
