@@ -713,7 +713,18 @@ const RemoteOrders = () => {
                 </div>
                 <div>
                   <Label className="text-[11px]">WhatsApp</Label>
-                  <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="5511999999999" className="h-9" />
+                  <Input value={whatsapp} onChange={e => {
+                    // Mask: (00) 00000-0000
+                    let digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                    if (digits.length > 7) {
+                      digits = `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`;
+                    } else if (digits.length > 2) {
+                      digits = `(${digits.slice(0,2)}) ${digits.slice(2)}`;
+                    } else if (digits.length > 0) {
+                      digits = `(${digits}`;
+                    }
+                    setWhatsapp(digits);
+                  }} placeholder="(00) 00000-0000" className="h-9" />
                 </div>
               </div>
             </div>

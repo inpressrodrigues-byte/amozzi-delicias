@@ -94,15 +94,18 @@ const Customers = () => {
               <div key={customer.id} className="bg-card border border-border rounded-xl overflow-hidden">
                 <div className="p-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <span className="text-sm font-semibold">{customer.name.charAt(0).toUpperCase()}</span>
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 relative">
+                      <span className="text-sm font-semibold text-primary">{customer.name.charAt(0).toUpperCase()}</span>
+                      <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full h-4 min-w-[16px] flex items-center justify-center px-0.5">
+                        {customer.total_orders || 0}
+                      </span>
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">{customer.name}</p>
                       <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                         {customer.sector && <span>{customer.sector}</span>}
                         {customer.whatsapp && <span>📱 {customer.whatsapp}</span>}
-                        <span>{customer.total_orders || 0} pedidos</span>
+                        <span className="font-medium">{customer.total_orders || 0} compras</span>
                       </div>
                     </div>
                   </div>
