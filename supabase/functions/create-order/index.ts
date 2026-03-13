@@ -197,6 +197,19 @@ serve(async (req) => {
       });
     }
 
+    // --- Deduct stock ---
+    for (const item of orderItems) {
+      const product = products.find((p) => p.id === item.id);
+      if (product) {
+        // Check if product has stock_quantity tracked
+        const { data: fullProduct } = await supabase.from("products").select("stock_quantity").eq("id", item.id).single();
+        if (fullProduct && fullProduct.stock_quantity != null) {
+          const newQty = Math.max(0, fullProduct.stock_quantity - item.quantity);
+          await supabase.from("products").update({ stock_quantity: newQty }).eq("id", item.id);
+        }
+      }
+    }
+
     // --- Side effects (loyalty + coupon) after successful order creation ---
     await supabase.rpc("increment_loyalty", { p_whatsapp: phone });
 
