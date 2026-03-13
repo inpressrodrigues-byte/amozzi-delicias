@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   user: any;
-  session: Session | null;
+  session: any;
   isAdmin: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
