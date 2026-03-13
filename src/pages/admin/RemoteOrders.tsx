@@ -787,7 +787,7 @@ const RemoteOrders = () => {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <span className="font-medium leading-tight block">{product.description || product.name}</span>
+                            <span className="font-medium leading-tight block">{product.name}</span>
                             {stock != null && (
                               <span className={`text-[10px] ${outOfStock ? 'text-destructive' : 'text-muted-foreground'}`}>
                                 {outOfStock ? 'Esgotado' : `${stock} restantes`}
