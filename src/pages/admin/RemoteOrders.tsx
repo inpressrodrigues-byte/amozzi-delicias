@@ -239,7 +239,7 @@ const RemoteOrders = () => {
       if (existing) {
         return prev.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { product_id: product.id, name: product.description || product.name, image_url: product.image_url, quantity: 1, price: Number(product.price) || 0 }];
+      return [...prev, { product_id: product.id, name: product.name, image_url: product.image_url, quantity: 1, price: Number(product.price) || 0 }];
     });
   };
 
@@ -278,6 +278,17 @@ const RemoteOrders = () => {
       toast.success('Pedido remoto criado!');
     }
 
+    // Deduct stock for each item
+    if (!editingOrder) {
+      for (const item of selectedItems) {
+        const product = products?.find(p => p.id === item.product_id);
+        if (product && product.stock_quantity != null) {
+          const newQty = Math.max(0, product.stock_quantity - item.quantity);
+          await supabase.from('products').update({ stock_quantity: newQty }).eq('id', item.product_id);
+        }
+      }
+    }
+
     // Upsert customer in database
     const purchaseEntry = {
       date: new Date().toISOString(),
@@ -307,6 +318,7 @@ const RemoteOrders = () => {
     setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
     queryClient.invalidateQueries({ queryKey: ['customers'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
   };
 
   const startEditOrder = (order: any) => {
@@ -780,14 +792,14 @@ const RemoteOrders = () => {
                           }`}
                         >
                           {product.image_url ? (
-                            <img src={product.image_url} alt={product.description || product.name} className="w-9 h-9 rounded-md object-cover shrink-0" />
+                            <img src={product.image_url} alt={product.name} className="w-9 h-9 rounded-md object-cover shrink-0" />
                           ) : (
                             <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
                               <Package className="h-3.5 w-3.5 text-muted-foreground" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <span className="font-medium leading-tight block">{product.description || product.name}</span>
+                            <span className="font-medium leading-tight block">{product.name}</span>
                             {stock != null && (
                               <span className={`text-[10px] ${outOfStock ? 'text-destructive' : 'text-muted-foreground'}`}>
                                 {outOfStock ? 'Esgotado' : `${stock} restantes`}
