@@ -70,7 +70,7 @@ const Dashboard = () => {
     queryKey: ['admin-all-orders'],
     queryFn: async () => {
       const { data } = await supabase.from('orders').select('*');
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 
@@ -78,7 +78,7 @@ const Dashboard = () => {
     queryKey: ['admin-all-remote-orders'],
     queryFn: async () => {
       const { data } = await supabase.from('remote_orders').select('*');
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 
