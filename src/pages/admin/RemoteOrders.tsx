@@ -239,7 +239,7 @@ const RemoteOrders = () => {
       if (existing) {
         return prev.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { product_id: product.id, name: product.description || product.name, image_url: product.image_url, quantity: 1, price: Number(product.price) || 0 }];
+      return [...prev, { product_id: product.id, name: product.name, image_url: product.image_url, quantity: 1, price: Number(product.price) || 0 }];
     });
   };
 
