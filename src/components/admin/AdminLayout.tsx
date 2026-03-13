@@ -16,6 +16,7 @@ const navItems = [
   { path: '/admin/customers', label: 'Banco de Dados', icon: Database },
   { path: '/admin/internal', label: 'Controle Interno', icon: ClipboardList },
   { path: '/admin/settings', label: 'Personalização', icon: Palette },
+  { path: '/admin/profiles', label: 'Perfis', icon: UserCog },
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
