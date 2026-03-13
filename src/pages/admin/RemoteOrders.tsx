@@ -278,6 +278,17 @@ const RemoteOrders = () => {
       toast.success('Pedido remoto criado!');
     }
 
+    // Deduct stock for each item
+    if (!editingOrder) {
+      for (const item of selectedItems) {
+        const product = products?.find(p => p.id === item.product_id);
+        if (product && product.stock_quantity != null) {
+          const newQty = Math.max(0, product.stock_quantity - item.quantity);
+          await supabase.from('products').update({ stock_quantity: newQty }).eq('id', item.product_id);
+        }
+      }
+    }
+
     // Upsert customer in database
     const purchaseEntry = {
       date: new Date().toISOString(),
@@ -307,6 +318,7 @@ const RemoteOrders = () => {
     setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
     queryClient.invalidateQueries({ queryKey: ['customers'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
   };
 
   const startEditOrder = (order: any) => {
