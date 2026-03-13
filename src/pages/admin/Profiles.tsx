@@ -1,171 +1,269 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Shield, Key, UserCog, Plus } from 'lucide-react';
+import { Shield, KeyRound, Pencil, Plus } from 'lucide-react';
 
 interface AdminProfile {
   user_id: string;
   email: string;
   full_name: string | null;
   role: string;
+  created_at: string | null;
 }
 
 const Profiles = () => {
-  const { user } = useAuth();
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [passwordDialog, setPasswordDialog] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [addDialog, setAddDialog] = useState(false);
+
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState('');
-  const [newAdminPassword, setNewAdminPassword] = useState('');
-  const [newAdminName, setNewAdminName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
+
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState<AdminProfile | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const [nameTarget, setNameTarget] = useState<AdminProfile | null>(null);
+  const [editedName, setEditedName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  const fetchProfiles = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke('create-admin', {
+      body: { action: 'list' },
+    });
+
+    if (error) {
+      toast.error('Erro ao carregar perfis admin');
+      setLoading(false);
+      return;
+    }
+
+    setProfiles((data?.admins || []) as AdminProfile[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
     fetchProfiles();
   }, []);
 
-  const fetchProfiles = async () => {
-    setLoading(true);
-    // Get all admin roles
-    const { data: roles } = await supabase.from('user_roles').select('user_id, role');
-    if (!roles) { setLoading(false); return; }
+  const handleCreateAdmin = async () => {
+    if (!newEmail.trim() || !newPassword.trim()) {
+      toast.error('Preencha e-mail e senha');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Senha mínima: 6 caracteres');
+      return;
+    }
 
-    // Get profiles for those users
-    const userIds = roles.map(r => r.user_id);
-    const { data: profilesData } = await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds);
-
-    const merged: AdminProfile[] = roles.map(r => {
-      const profile = profilesData?.find(p => p.user_id === r.user_id);
-      return {
-        user_id: r.user_id,
-        email: r.user_id === user?.id ? (user.email || '') : '',
-        full_name: profile?.full_name || null,
-        role: r.role,
-      };
+    setAdding(true);
+    const { error } = await supabase.functions.invoke('create-admin', {
+      body: {
+        action: 'create',
+        email: newEmail.trim(),
+        password: newPassword,
+        full_name: newName.trim(),
+      },
     });
+    setAdding(false);
 
-    setProfiles(merged);
-    setLoading(false);
+    if (error) {
+      toast.error('Erro ao criar admin');
+      return;
+    }
+
+    toast.success('Conta admin criada');
+    setAddDialogOpen(false);
+    setNewEmail('');
+    setNewPassword('');
+    setNewName('');
+    fetchProfiles();
+  };
+
+  const openPasswordDialog = (profile: AdminProfile) => {
+    setPasswordTarget(profile);
+    setResetPassword('');
+    setResetPasswordConfirm('');
+    setPasswordDialogOpen(true);
   };
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) { toast.error('A senha deve ter pelo menos 6 caracteres'); return; }
-    if (newPassword !== confirmPassword) { toast.error('As senhas não coincidem'); return; }
-    setChangingPassword(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setChangingPassword(false);
-    if (error) { toast.error('Erro ao trocar senha: ' + error.message); return; }
-    toast.success('Senha alterada com sucesso!');
-    setPasswordDialog(false);
-    setNewPassword('');
-    setConfirmPassword('');
+    if (!passwordTarget) return;
+    if (resetPassword.length < 6) {
+      toast.error('Senha mínima: 6 caracteres');
+      return;
+    }
+    if (resetPassword !== resetPasswordConfirm) {
+      toast.error('As senhas não conferem');
+      return;
+    }
+
+    setSavingPassword(true);
+    const { error } = await supabase.functions.invoke('create-admin', {
+      body: {
+        action: 'update_password',
+        user_id: passwordTarget.user_id,
+        password: resetPassword,
+      },
+    });
+    setSavingPassword(false);
+
+    if (error) {
+      toast.error('Erro ao trocar senha');
+      return;
+    }
+
+    toast.success('Senha atualizada com sucesso');
+    setPasswordDialogOpen(false);
   };
 
-  const handleAddAdmin = async () => {
-    if (!newEmail || !newAdminPassword) { toast.error('Preencha email e senha'); return; }
-    if (newAdminPassword.length < 6) { toast.error('Senha mínima: 6 caracteres'); return; }
-    setAdding(true);
+  const openNameDialog = (profile: AdminProfile) => {
+    setNameTarget(profile);
+    setEditedName(profile.full_name || '');
+    setNameDialogOpen(true);
+  };
 
-    // Use edge function to create admin
-    const { data, error } = await supabase.functions.invoke('create-admin', {
-      body: { email: newEmail, password: newAdminPassword, full_name: newAdminName },
+  const handleSaveName = async () => {
+    if (!nameTarget) return;
+    setSavingName(true);
+
+    const { error } = await supabase.functions.invoke('create-admin', {
+      body: {
+        action: 'update_profile',
+        user_id: nameTarget.user_id,
+        full_name: editedName.trim(),
+      },
     });
+    setSavingName(false);
 
-    setAdding(false);
-    if (error) { toast.error('Erro ao criar admin'); return; }
-    toast.success('Admin criado com sucesso!');
-    setAddDialog(false);
-    setNewEmail('');
-    setNewAdminPassword('');
-    setNewAdminName('');
+    if (error) {
+      toast.error('Erro ao salvar nome');
+      return;
+    }
+
+    toast.success('Nome atualizado');
+    setNameDialogOpen(false);
     fetchProfiles();
   };
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-bold">Perfis Admin</h1>
-        <Button className="bg-primary" onClick={() => setAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Novo Admin
+        <Button onClick={() => setAddDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Novo Admin
         </Button>
       </div>
 
-      {loading ? <p className="text-muted-foreground">Carregando...</p> : (
-        <div className="grid gap-4">
-          {profiles.map(p => (
-            <Card key={p.user_id}>
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-primary" />
+      {loading ? (
+        <p className="text-muted-foreground">Carregando perfis...</p>
+      ) : (
+        <div className="grid gap-3">
+          {profiles.map((profile) => (
+            <Card key={profile.user_id}>
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{profile.full_name || 'Sem nome'}</p>
+                    <p className="truncate text-sm text-muted-foreground">{profile.email || 'Sem email'}</p>
+                    <Badge variant="secondary" className="mt-1">{profile.role}</Badge>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold">{p.full_name || p.email || 'Admin'}</p>
-                  {p.email && <p className="text-sm text-muted-foreground">{p.email}</p>}
-                  <Badge variant="secondary" className="mt-1">{p.role}</Badge>
-                </div>
-                {p.user_id === user?.id && (
-                  <Button variant="outline" size="sm" onClick={() => setPasswordDialog(true)}>
-                    <Key className="h-4 w-4 mr-1" /> Trocar Senha
+
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => openNameDialog(profile)}>
+                    <Pencil className="mr-1 h-4 w-4" /> Editar
                   </Button>
-                )}
+                  <Button variant="outline" size="sm" onClick={() => openPasswordDialog(profile)}>
+                    <KeyRound className="mr-1 h-4 w-4" /> Trocar Senha
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
-          {profiles.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhum perfil encontrado.</p>}
+
+          {profiles.length === 0 && (
+            <p className="py-8 text-center text-muted-foreground">Nenhum administrador encontrado.</p>
+          )}
         </div>
       )}
 
-      {/* Change Password Dialog */}
-      <Dialog open={passwordDialog} onOpenChange={setPasswordDialog}>
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Trocar Senha</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Novo administrador</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Nova Senha</Label>
-              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+              <Label>Nome</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome completo" />
             </div>
             <div>
-              <Label>Confirmar Senha</Label>
-              <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+              <Label>E-mail</Label>
+              <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="admin@empresa.com" />
             </div>
-            <Button className="w-full bg-primary" onClick={handleChangePassword} disabled={changingPassword}>
-              {changingPassword ? 'Salvando...' : 'Alterar Senha'}
+            <div>
+              <Label>Senha</Label>
+              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+            </div>
+            <Button className="w-full" onClick={handleCreateAdmin} disabled={adding}>
+              {adding ? 'Criando...' : 'Criar Admin'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Add Admin Dialog */}
-      <Dialog open={addDialog} onOpenChange={setAddDialog}>
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Novo Administrador</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Trocar senha</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Conta: {passwordTarget?.email || '-'}</p>
             <div>
-              <Label>Nome</Label>
-              <Input value={newAdminName} onChange={e => setNewAdminName(e.target.value)} placeholder="Nome completo" />
+              <Label>Nova senha</Label>
+              <Input type="password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} />
             </div>
             <div>
-              <Label>Email</Label>
-              <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@exemplo.com" />
+              <Label>Confirmar senha</Label>
+              <Input type="password" value={resetPasswordConfirm} onChange={(e) => setResetPasswordConfirm(e.target.value)} />
             </div>
+            <Button className="w-full" onClick={handleChangePassword} disabled={savingPassword}>
+              {savingPassword ? 'Salvando...' : 'Salvar nova senha'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={nameDialogOpen} onOpenChange={setNameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar nome</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Conta: {nameTarget?.email || '-'}</p>
             <div>
-              <Label>Senha</Label>
-              <Input type="password" value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+              <Label>Nome completo</Label>
+              <Input value={editedName} onChange={(e) => setEditedName(e.target.value)} />
             </div>
-            <Button className="w-full bg-primary" onClick={handleAddAdmin} disabled={adding}>
-              {adding ? 'Criando...' : 'Criar Admin'}
+            <Button className="w-full" onClick={handleSaveName} disabled={savingName}>
+              {savingName ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>
         </DialogContent>
