@@ -780,7 +780,7 @@ const RemoteOrders = () => {
                           }`}
                         >
                           {product.image_url ? (
-                            <img src={product.image_url} alt={product.description || product.name} className="w-9 h-9 rounded-md object-cover shrink-0" />
+                            <img src={product.image_url} alt={product.name} className="w-9 h-9 rounded-md object-cover shrink-0" />
                           ) : (
                             <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
                               <Package className="h-3.5 w-3.5 text-muted-foreground" />
