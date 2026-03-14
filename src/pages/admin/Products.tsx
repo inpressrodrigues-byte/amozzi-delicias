@@ -23,7 +23,7 @@ const Products = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50', stock_quantity: '' });
+  const [form, setForm] = useState({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50', stock_quantity: '', tags: [] as string[] });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [nutritionForm, setNutritionForm] = useState<NutritionData>({ ...defaultNutrition });
   const { data: nutritionData } = useProductNutrition(editing?.id);
