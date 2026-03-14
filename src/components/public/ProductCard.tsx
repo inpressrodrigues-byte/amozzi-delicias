@@ -42,12 +42,12 @@ const ProductCard = ({ product }: { product: Product }) => {
     >
       <div className="bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 border border-border/50">
         {/* Image */}
-        <div className="aspect-[4/3] overflow-hidden relative">
+        <div className="aspect-[4/3] overflow-hidden relative bg-secondary/10">
           {product.image_url ? (
             <img
               src={product.image_url}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
               loading="lazy"
             />
           ) : (
@@ -59,6 +59,29 @@ const ProductCard = ({ product }: { product: Product }) => {
           <span className="absolute top-3 left-3 bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
             {categoryLabel}
           </span>
+          {/* Tags badges (fitness, zero sugar, etc.) */}
+          {product.tags && (product.tags as string[]).length > 0 && (
+            <div className="absolute top-3 right-3 flex flex-col gap-1">
+              {(product.tags as string[]).map((tag: string) => (
+                <span
+                  key={tag}
+                  className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full shadow-md ${
+                    tag === 'fitness' ? 'bg-emerald-500 text-white' :
+                    tag === 'zero_acucar' ? 'bg-sky-500 text-white' :
+                    tag === 'vegano' ? 'bg-lime-500 text-white' :
+                    tag === 'sem_gluten' ? 'bg-amber-500 text-white' :
+                    'bg-primary text-primary-foreground'
+                  }`}
+                >
+                  {tag === 'fitness' ? '💪 FITNESS' :
+                   tag === 'zero_acucar' ? '🚫 ZERO AÇÚCAR' :
+                   tag === 'vegano' ? '🌱 VEGANO' :
+                   tag === 'sem_gluten' ? '🌾 SEM GLÚTEN' :
+                   tag.toUpperCase()}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Content */}
