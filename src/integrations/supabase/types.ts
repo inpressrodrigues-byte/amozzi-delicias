@@ -103,6 +103,7 @@ export type Database = {
           password_hash: string | null
           purchase_history: Json | null
           sector: string | null
+          source: string | null
           total_orders: number | null
           updated_at: string
           whatsapp: string | null
@@ -117,6 +118,7 @@ export type Database = {
           password_hash?: string | null
           purchase_history?: Json | null
           sector?: string | null
+          source?: string | null
           total_orders?: number | null
           updated_at?: string
           whatsapp?: string | null
@@ -131,6 +133,7 @@ export type Database = {
           password_hash?: string | null
           purchase_history?: Json | null
           sector?: string | null
+          source?: string | null
           total_orders?: number | null
           updated_at?: string
           whatsapp?: string | null
@@ -366,6 +369,7 @@ export type Database = {
           profit_margin_type: string | null
           profit_margin_value: number | null
           stock_quantity: number | null
+          tags: Json | null
           updated_at: string
         }
         Insert: {
@@ -381,6 +385,7 @@ export type Database = {
           profit_margin_type?: string | null
           profit_margin_value?: number | null
           stock_quantity?: number | null
+          tags?: Json | null
           updated_at?: string
         }
         Update: {
@@ -396,6 +401,7 @@ export type Database = {
           profit_margin_type?: string | null
           profit_margin_value?: number | null
           stock_quantity?: number | null
+          tags?: Json | null
           updated_at?: string
         }
         Relationships: []
