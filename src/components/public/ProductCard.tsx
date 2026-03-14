@@ -14,6 +14,7 @@ interface Product {
   price: number;
   image_url: string | null;
   category: string;
+  tags?: string[];
 }
 
 const ProductCard = ({ product }: { product: Product }) => {

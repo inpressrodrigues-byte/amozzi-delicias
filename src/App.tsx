@@ -48,6 +48,7 @@ const App = () => (
               <Route path="/admin/internal" element={<InternalControl />} />
               <Route path="/admin/customers" element={<Customers />} />
               <Route path="/admin/profiles" element={<Profiles />} />
+              <Route path="/admin/ideas" element={<Ideas />} />
               <Route path="/rastrear" element={<TrackOrder />} />
               <Route path="/rastrear/:code" element={<TrackOrder />} />
               <Route path="/meus-pedidos" element={<MyOrders />} />

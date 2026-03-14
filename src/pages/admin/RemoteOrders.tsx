@@ -312,7 +312,8 @@ const RemoteOrders = () => {
         sector: sector.trim(),
         purchase_history: [purchaseEntry],
         total_orders: 1,
-      });
+        source: 'remoto',
+      } as any);
     }
 
     setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);

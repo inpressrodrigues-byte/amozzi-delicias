@@ -17,6 +17,7 @@ const navItems = [
   { path: '/admin/internal', label: 'Controle Interno', icon: ClipboardList },
   { path: '/admin/settings', label: 'Personalização', icon: Palette },
   { path: '/admin/profiles', label: 'Perfis', icon: UserCog },
+  { path: '/admin/ideas', label: 'Ideias', icon: Lightbulb },
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
