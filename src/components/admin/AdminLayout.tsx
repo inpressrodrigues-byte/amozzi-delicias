@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database, UserCog } from 'lucide-react';
+import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database, UserCog, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,7 @@ const navItems = [
   { path: '/admin/internal', label: 'Controle Interno', icon: ClipboardList },
   { path: '/admin/settings', label: 'Personalização', icon: Palette },
   { path: '/admin/profiles', label: 'Perfis', icon: UserCog },
+  { path: '/admin/ideas', label: 'Ideias', icon: Lightbulb },
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {

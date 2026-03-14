@@ -80,11 +80,29 @@ const Orders = () => {
   };
 
   const deleteOrder = async (id: string) => {
-    if (!confirm('Excluir este pedido permanentemente?')) return;
+    if (!confirm('Excluir este pedido permanentemente? O estoque será restaurado.')) return;
+    
+    // Restore stock before deleting
+    const order = orders?.find(o => o.id === id);
+    if (order) {
+      const items = Array.isArray(order.items) ? order.items as any[] : [];
+      for (const item of items) {
+        const productId = item.id || item.product_id;
+        if (productId) {
+          const { data: product } = await supabase.from('products').select('stock_quantity').eq('id', productId).single();
+          if (product && product.stock_quantity != null) {
+            const restored = product.stock_quantity + (Number(item.quantity) || 1);
+            await supabase.from('products').update({ stock_quantity: restored }).eq('id', productId);
+          }
+        }
+      }
+    }
+    
     const { error } = await supabase.from('orders').delete().eq('id', id);
     if (error) { toast.error('Erro ao excluir pedido'); return; }
-    toast.success('Pedido excluído');
+    toast.success('Pedido excluído e estoque restaurado!');
     queryClient.invalidateQueries({ queryKey: ['admin-orders-list'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
   };
 
   const openMap = (lat: number, lng: number) => {

@@ -194,6 +194,7 @@ serve(async (req) => {
         address: sanitizeText(customer_address, 300),
         purchase_history: [purchaseEntry],
         total_orders: 1,
+        source: "site",
       });
     }
 
