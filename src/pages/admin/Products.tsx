@@ -45,7 +45,7 @@ const Products = () => {
   }, [nutritionData, editing]);
 
   const resetForm = () => {
-    setForm({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50', stock_quantity: '' });
+    setForm({ name: '', description: '', price: '', cost: '', category: 'bolo_no_pote', available: true, profit_margin_type: 'percentage', profit_margin_value: '50', stock_quantity: '', tags: [] });
     setImageFile(null);
     setEditing(null);
     setNutritionForm({ ...defaultNutrition });
