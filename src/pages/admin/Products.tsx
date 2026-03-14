@@ -208,6 +208,35 @@ const Products = () => {
                 <Label>Disponível</Label>
               </div>
               <NutritionForm nutrition={nutritionForm} onChange={setNutritionForm} />
+              {/* Tags */}
+              <div>
+                <Label className="mb-2 block">Tags do Produto</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'fitness', label: '💪 Fitness', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+                    { value: 'zero_acucar', label: '🚫 Zero Açúcar', color: 'bg-sky-100 text-sky-700 border-sky-300' },
+                    { value: 'vegano', label: '🌱 Vegano', color: 'bg-lime-100 text-lime-700 border-lime-300' },
+                    { value: 'sem_gluten', label: '🌾 Sem Glúten', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+                  ].map(tag => {
+                    const active = form.tags.includes(tag.value);
+                    return (
+                      <button
+                        key={tag.value}
+                        type="button"
+                        onClick={() => setForm(f => ({
+                          ...f,
+                          tags: active ? f.tags.filter(t => t !== tag.value) : [...f.tags, tag.value]
+                        }))}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                          active ? tag.color + ' ring-2 ring-offset-1' : 'bg-muted text-muted-foreground border-border opacity-60'
+                        }`}
+                      >
+                        {tag.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <Button className="w-full bg-primary" onClick={handleSave}>{editing ? 'Atualizar' : 'Adicionar'}</Button>
             </div>
           </DialogContent>
