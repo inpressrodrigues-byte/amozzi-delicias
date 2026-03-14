@@ -93,6 +93,7 @@ const Products = () => {
       profit_margin_type: form.profit_margin_type,
       profit_margin_value: parseFloat(form.profit_margin_value) || 0,
       stock_quantity: form.stock_quantity !== '' ? parseInt(form.stock_quantity) : null,
+      tags: form.tags,
     };
 
     let productId = editing?.id;
