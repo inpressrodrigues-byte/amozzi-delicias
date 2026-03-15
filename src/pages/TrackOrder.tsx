@@ -27,12 +27,15 @@ const TrackOrder = () => {
 
   const fetchOrder = async (trackingCode: string) => {
     setLoading(true);
-    const { data } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('tracking_code', trackingCode)
-      .maybeSingle();
-    setOrder(data);
+    try {
+      const { data, error } = await supabase.functions.invoke('track-order', {
+        body: { tracking_code: trackingCode },
+      });
+      if (error) throw error;
+      setOrder(data?.order || null);
+    } catch {
+      setOrder(null);
+    }
     setLoading(false);
   };
 
@@ -41,22 +44,14 @@ const TrackOrder = () => {
     else setLoading(false);
   }, [code]);
 
-  // Realtime updates
+  // Poll for updates every 15 seconds instead of realtime (no public SELECT policy)
   useEffect(() => {
-    if (!order?.id) return;
-    const channel = supabase
-      .channel(`order-${order.id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-        filter: `id=eq.${order.id}`,
-      }, (payload) => {
-        setOrder((prev: any) => ({ ...prev, ...payload.new }));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [order?.id]);
+    if (!order?.tracking_code) return;
+    const interval = setInterval(() => {
+      fetchOrder(order.tracking_code);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [order?.tracking_code]);
 
   // Show feedback 10min after delivered
   useEffect(() => {
