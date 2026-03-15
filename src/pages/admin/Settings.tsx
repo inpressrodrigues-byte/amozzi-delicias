@@ -211,6 +211,24 @@ const Settings = () => {
         </Card>
 
         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" /> Chave PIX (Pagamento)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Nome do Titular</Label>
+              <Input value={pixName} onChange={e => setPixName(e.target.value)} placeholder="Nome que aparece no PIX" />
+            </div>
+            <div>
+              <Label>Chave PIX (copia e cola)</Label>
+              <Input value={pixKey} onChange={e => setPixKey(e.target.value)} placeholder="CPF, e-mail, telefone ou chave aleatória" />
+            </div>
+            <p className="text-xs text-muted-foreground">Essa chave será exibida para o cliente copiar e colar ao escolher pagamento via PIX.</p>
+          </CardContent>
+        </Card>
+
           <CardHeader><CardTitle>Contato e Redes Sociais</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div>
