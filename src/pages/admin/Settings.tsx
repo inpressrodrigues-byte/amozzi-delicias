@@ -121,7 +121,16 @@ const Settings = () => {
         .eq('id', settings!.id);
 
       if (error) throw error;
+
+      // Save PIX settings
+      if (billingSettings?.id) {
+        await supabase.from('billing_settings').update({ pix_key: pixKey, pix_name: pixName }).eq('id', billingSettings.id);
+      } else {
+        await supabase.from('billing_settings').insert({ pix_key: pixKey, pix_name: pixName } as any);
+      }
+
       queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-settings'] });
       toast.success('Configurações salvas!');
     } catch (err) {
       toast.error('Erro ao salvar');
