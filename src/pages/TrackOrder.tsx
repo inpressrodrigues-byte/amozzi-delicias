@@ -27,12 +27,15 @@ const TrackOrder = () => {
 
   const fetchOrder = async (trackingCode: string) => {
     setLoading(true);
-    const { data } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('tracking_code', trackingCode)
-      .maybeSingle();
-    setOrder(data);
+    try {
+      const { data, error } = await supabase.functions.invoke('track-order', {
+        body: { tracking_code: trackingCode },
+      });
+      if (error) throw error;
+      setOrder(data?.order || null);
+    } catch {
+      setOrder(null);
+    }
     setLoading(false);
   };
 
