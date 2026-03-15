@@ -46,6 +46,23 @@ const Settings = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pixKey, setPixKey] = useState('');
+  const [pixName, setPixName] = useState('');
+
+  const { data: billingSettings } = useQuery({
+    queryKey: ['billing-settings'],
+    queryFn: async () => {
+      const { data } = await supabase.from('billing_settings').select('*').limit(1).single();
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (billingSettings) {
+      setPixKey(billingSettings.pix_key || '');
+      setPixName(billingSettings.pix_name || '');
+    }
+  }, [billingSettings]);
 
   useEffect(() => {
     if (settings) {
