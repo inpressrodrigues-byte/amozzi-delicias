@@ -44,22 +44,14 @@ const TrackOrder = () => {
     else setLoading(false);
   }, [code]);
 
-  // Realtime updates
+  // Poll for updates every 15 seconds instead of realtime (no public SELECT policy)
   useEffect(() => {
-    if (!order?.id) return;
-    const channel = supabase
-      .channel(`order-${order.id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-        filter: `id=eq.${order.id}`,
-      }, (payload) => {
-        setOrder((prev: any) => ({ ...prev, ...payload.new }));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [order?.id]);
+    if (!order?.tracking_code) return;
+    const interval = setInterval(() => {
+      fetchOrder(order.tracking_code);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [order?.tracking_code]);
 
   // Show feedback 10min after delivered
   useEffect(() => {
