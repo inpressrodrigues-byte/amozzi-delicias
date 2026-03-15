@@ -7,9 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Save, Plus, Trash2 } from 'lucide-react';
+import { Save, Plus, Trash2, QrCode } from 'lucide-react';
 
 interface DeliveryZone {
   name: string;
@@ -46,6 +46,23 @@ const Settings = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pixKey, setPixKey] = useState('');
+  const [pixName, setPixName] = useState('');
+
+  const { data: billingSettings } = useQuery({
+    queryKey: ['billing-settings'],
+    queryFn: async () => {
+      const { data } = await supabase.from('billing_settings').select('*').limit(1).single();
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (billingSettings) {
+      setPixKey(billingSettings.pix_key || '');
+      setPixName(billingSettings.pix_name || '');
+    }
+  }, [billingSettings]);
 
   useEffect(() => {
     if (settings) {
@@ -104,7 +121,16 @@ const Settings = () => {
         .eq('id', settings!.id);
 
       if (error) throw error;
+
+      // Save PIX settings
+      if (billingSettings?.id) {
+        await supabase.from('billing_settings').update({ pix_key: pixKey, pix_name: pixName }).eq('id', billingSettings.id);
+      } else {
+        await supabase.from('billing_settings').insert({ pix_key: pixKey, pix_name: pixName } as any);
+      }
+
       queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-settings'] });
       toast.success('Configurações salvas!');
     } catch (err) {
       toast.error('Erro ao salvar');
@@ -181,6 +207,25 @@ const Settings = () => {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" /> Chave PIX (Pagamento)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Nome do Titular</Label>
+              <Input value={pixName} onChange={e => setPixName(e.target.value)} placeholder="Nome que aparece no PIX" />
+            </div>
+            <div>
+              <Label>Chave PIX (copia e cola)</Label>
+              <Input value={pixKey} onChange={e => setPixKey(e.target.value)} placeholder="CPF, e-mail, telefone ou chave aleatória" />
+            </div>
+            <p className="text-xs text-muted-foreground">Essa chave será exibida para o cliente copiar e colar ao escolher pagamento via PIX.</p>
           </CardContent>
         </Card>
 

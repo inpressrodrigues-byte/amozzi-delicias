@@ -59,7 +59,7 @@ serve(async (req) => {
     if (!item_ids || !Array.isArray(item_ids) || item_ids.length === 0) {
       return new Response(JSON.stringify({ error: "Nenhum item fornecido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    if (!["stripe", "whatsapp"].includes(payment_method)) {
+    if (!["cartao", "pix", "stripe", "whatsapp"].includes(payment_method)) {
       return new Response(JSON.stringify({ error: "Método de pagamento inválido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

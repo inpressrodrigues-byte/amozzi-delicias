@@ -1,0 +1,1 @@
+CREATE POLICY "Anyone can read pix settings" ON public.billing_settings FOR SELECT TO public USING (true);
