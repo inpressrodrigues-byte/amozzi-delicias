@@ -229,6 +229,7 @@ const Settings = () => {
           </CardContent>
         </Card>
 
+        <Card>
           <CardHeader><CardTitle>Contato e Redes Sociais</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div>
