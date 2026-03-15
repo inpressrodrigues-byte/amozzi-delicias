@@ -316,6 +316,14 @@ const RemoteOrders = () => {
       } as any);
     }
 
+    // Increment loyalty for this specific phone number
+    if (!editingOrder && whatsapp.trim()) {
+      const cleanPhone = whatsapp.trim().replace(/\D/g, '');
+      if (cleanPhone.length >= 10 && cleanPhone.length <= 13) {
+        await supabase.rpc('increment_loyalty', { p_whatsapp: cleanPhone });
+      }
+    }
+
     setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
     queryClient.invalidateQueries({ queryKey: ['customers'] });
