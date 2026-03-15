@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Loader2, Gift, CreditCard, MessageCircle, Tag, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Gift, CreditCard, Tag, CheckCircle2, Copy, QrCode } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 const Checkout = () => {
   const { items, total, clearCart } = useCart();
@@ -25,10 +26,20 @@ const Checkout = () => {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [loyalty, setLoyalty] = useState<{ purchase_count: number; discount_available: boolean } | null>(null);
   const [useDiscount, setUseDiscount] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'whatsapp'>('stripe');
+  const [paymentMethod, setPaymentMethod] = useState<'cartao' | 'pix'>('pix');
   const [couponCode, setCouponCode] = useState('');
   const [coupon, setCoupon] = useState<{ discount_type: string; discount_value: number; code: string } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [pixOrderResult, setPixOrderResult] = useState<{ tracking_code: string; grand_total: number } | null>(null);
+
+  // Fetch PIX settings from billing_settings
+  const { data: billingSettings } = useQuery({
+    queryKey: ['billing-settings-public'],
+    queryFn: async () => {
+      const { data } = await supabase.from('billing_settings').select('pix_key, pix_name').limit(1).single();
+      return data;
+    },
+  });
 
   const deliveryZones: { name: string; fee: number }[] = ((settings as any)?.delivery_zones || []).filter((z: any) => z.name && z.name.trim() !== '');
 
@@ -41,7 +52,7 @@ const Checkout = () => {
     }
   }, [selectedZone, deliveryZones]);
 
-  // Loyalty lookup via secure RPC (no enumeration possible)
+  // Loyalty lookup via secure RPC
   useEffect(() => {
     const checkLoyalty = async () => {
       const phone = form.whatsapp.replace(/\D/g, '');
@@ -77,7 +88,7 @@ const Checkout = () => {
       .finally(() => setCepLoading(false));
   }, [form.cep]);
 
-  // Client-side coupon preview (server re-validates on submit)
+  // Client-side coupon preview
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponLoading(true);
@@ -126,6 +137,88 @@ const Checkout = () => {
     );
   };
 
+  if (pixOrderResult) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+        <Card className="max-w-md w-full shadow-xl border-border/50">
+          <CardHeader className="text-center">
+            <div className="text-6xl mb-3">💰</div>
+            <CardTitle className="font-display text-2xl">Pagamento via PIX</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Copie a chave PIX abaixo, faça o pagamento e envie o comprovante pelo WhatsApp.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-1">Total a pagar:</p>
+              <p className="text-3xl font-display font-bold text-primary">
+                R$ {pixOrderResult.grand_total.toFixed(2).replace('.', ',')}
+              </p>
+            </div>
+
+            {billingSettings?.pix_name && (
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">Titular:</p>
+                <p className="font-semibold text-sm">{billingSettings.pix_name}</p>
+              </div>
+            )}
+
+            {billingSettings?.pix_key ? (
+              <div className="bg-muted/50 rounded-xl p-4 border border-border/50">
+                <p className="text-xs text-muted-foreground mb-2 text-center">Chave PIX (copia e cola):</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-background rounded-lg px-3 py-2.5 text-sm font-mono break-all border border-border">
+                    {billingSettings.pix_key}
+                  </code>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(billingSettings.pix_key!);
+                      toast.success('Chave PIX copiada!');
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-center text-muted-foreground">Chave PIX não configurada. Entre em contato pelo WhatsApp.</p>
+            )}
+
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground">Código de rastreio:</p>
+              <p className="font-mono font-bold text-primary text-lg">{pixOrderResult.tracking_code}</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {settings?.whatsapp_number && (
+                <Button
+                  className="w-full rounded-full bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white font-bold"
+                  onClick={() => {
+                    const whatsappNumber = settings.whatsapp_number?.replace(/\D/g, '') || '';
+                    const msg = `✅ Olá! Fiz um pedido via PIX.\n\n*Código:* ${pixOrderResult.tracking_code}\n*Valor:* R$ ${pixOrderResult.grand_total.toFixed(2)}\n\nVou enviar o comprovante!`;
+                    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+                  }}
+                >
+                  📱 Enviar Comprovante pelo WhatsApp
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                className="w-full rounded-full"
+                onClick={() => navigate(`/rastrear/${pixOrderResult.tracking_code}`)}
+              >
+                Rastrear meu Pedido
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -141,7 +234,6 @@ const Checkout = () => {
     );
   }
 
-  // Validate form fields client-side before calling edge function
   const validateForm = (): boolean => {
     const phone = form.whatsapp.replace(/\D/g, '');
     const cep = form.cep.replace(/\D/g, '');
@@ -153,8 +245,7 @@ const Checkout = () => {
     return true;
   };
 
-  // Create order via secure edge function (server validates + recalculates prices)
-  const createOrderViaEdgeFunction = async () => {
+  const createOrderViaEdgeFunction = async (method: string) => {
     const { data, error } = await supabase.functions.invoke('create-order', {
       body: {
         customer_name: form.name,
@@ -167,7 +258,7 @@ const Checkout = () => {
         delivery_zone_name: selectedZone || null,
         use_loyalty_discount: useDiscount && loyalty?.discount_available,
         coupon_code: coupon?.code || null,
-        payment_method: paymentMethod,
+        payment_method: method,
       },
     });
     if (error) throw new Error(error.message || 'Erro ao criar pedido');
@@ -179,15 +270,10 @@ const Checkout = () => {
     if (!validateForm()) return;
     setLoading(true);
     try {
-      const orderResult = await createOrderViaEdgeFunction();
-
+      const orderResult = await createOrderViaEdgeFunction('cartao');
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          order_id: orderResult.order_id,
-          customer_email: form.email || undefined,
-        },
+        body: { order_id: orderResult.order_id, customer_email: form.email || undefined },
       });
-
       if (error) throw error;
       if (data?.url) {
         clearCart();
@@ -195,37 +281,18 @@ const Checkout = () => {
       }
     } catch (err: any) {
       toast.error(err.message || 'Erro ao processar pagamento. Tente novamente.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleWhatsAppOrder = async () => {
+  const handlePixPayment = async () => {
     if (!validateForm()) return;
     setLoading(true);
     try {
-      const orderResult = await createOrderViaEdgeFunction();
-
-      const whatsappNumber = settings?.whatsapp_number?.replace(/\D/g, '') || '';
-      const itemsList = orderResult.items.map((i: any) => `• ${i.quantity}x ${i.name} - R$${(i.price * i.quantity).toFixed(2)}`).join('\n');
-      const feeText = orderResult.delivery_fee > 0 ? `\n*Taxa de entrega:* R$${orderResult.delivery_fee.toFixed(2)} (${selectedZone})` : '';
-      const discountText = orderResult.discount_amount > 0 ? `\n*Desconto:* -R$${orderResult.discount_amount.toFixed(2)}` : '';
-      const trackText = orderResult.tracking_code ? `\n*Código de rastreio:* ${orderResult.tracking_code}` : '';
-      const locationText = location ? `\n*Localização:* https://www.google.com/maps?q=${location.lat},${location.lng}` : '';
-      const message = `🧁 *Novo Pedido AMOZI*\n\n*Cliente:* ${form.name}\n*WhatsApp:* ${form.whatsapp}\n*Endereço:* ${form.address}\n*CEP:* ${form.cep}${locationText}\n\n*Itens:*\n${itemsList}${feeText}${discountText}\n\n*Total: R$${orderResult.grand_total.toFixed(2)}*${trackText}`;
-
-      if (whatsappNumber) {
-        window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
-      }
-
+      const orderResult = await createOrderViaEdgeFunction('pix');
       clearCart();
-      toast.success('Pedido realizado com sucesso!');
-      if (orderResult.tracking_code) {
-        navigate(`/rastrear/${orderResult.tracking_code}`);
-      } else {
-        navigate('/');
-      }
+      setPixOrderResult({ tracking_code: orderResult.tracking_code, grand_total: orderResult.grand_total });
     } catch (err: any) {
       toast.error(err.message || 'Erro ao realizar pedido.');
     } finally {
@@ -235,10 +302,10 @@ const Checkout = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (paymentMethod === 'stripe') {
+    if (paymentMethod === 'cartao') {
       handleStripePayment();
     } else {
-      handleWhatsAppOrder();
+      handlePixPayment();
     }
   };
 
@@ -392,29 +459,29 @@ const Checkout = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('stripe')}
+                    onClick={() => setPaymentMethod('pix')}
                     className={`p-4 rounded-xl border-2 text-center transition-all ${
-                      paymentMethod === 'stripe'
+                      paymentMethod === 'pix'
                         ? 'border-primary bg-primary/5 shadow-md'
                         : 'border-border hover:border-primary/50'
                     }`}
                   >
-                    <CreditCard className={`h-6 w-6 mx-auto mb-2 ${paymentMethod === 'stripe' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className="text-sm font-semibold block">Cartão / PIX</span>
-                    <span className="text-xs text-muted-foreground">Pagamento online</span>
+                    <QrCode className={`h-6 w-6 mx-auto mb-2 ${paymentMethod === 'pix' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className="text-sm font-semibold block">PIX</span>
+                    <span className="text-xs text-muted-foreground">Transferência instantânea</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('whatsapp')}
+                    onClick={() => setPaymentMethod('cartao')}
                     className={`p-4 rounded-xl border-2 text-center transition-all ${
-                      paymentMethod === 'whatsapp'
+                      paymentMethod === 'cartao'
                         ? 'border-primary bg-primary/5 shadow-md'
                         : 'border-border hover:border-primary/50'
                     }`}
                   >
-                    <MessageCircle className={`h-6 w-6 mx-auto mb-2 ${paymentMethod === 'whatsapp' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className="text-sm font-semibold block">WhatsApp</span>
-                    <span className="text-xs text-muted-foreground">Combinar pagamento</span>
+                    <CreditCard className={`h-6 w-6 mx-auto mb-2 ${paymentMethod === 'cartao' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className="text-sm font-semibold block">Cartão de Crédito</span>
+                    <span className="text-xs text-muted-foreground">Pagamento online seguro</span>
                   </button>
                 </div>
               </div>
@@ -422,10 +489,10 @@ const Checkout = () => {
               <Button type="submit" className="w-full bg-primary hover:bg-primary/90 rounded-full font-bold text-lg py-6" size="lg" disabled={loading}>
                 {loading ? (
                   <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Processando...</>
-                ) : paymentMethod === 'stripe' ? (
+                ) : paymentMethod === 'cartao' ? (
                   <><CreditCard className="h-5 w-5 mr-2" /> Pagar R$ {grandTotal.toFixed(2).replace('.', ',')}</>
                 ) : (
-                  <><MessageCircle className="h-5 w-5 mr-2" /> Enviar Pedido</>
+                  <><QrCode className="h-5 w-5 mr-2" /> Finalizar com PIX — R$ {grandTotal.toFixed(2).replace('.', ',')}</>
                 )}
               </Button>
             </form>
