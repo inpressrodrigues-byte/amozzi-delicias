@@ -433,6 +433,50 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_name: string
+          package_price: number
+          package_quantity: number
+          package_unit: string
+          product_id: string
+          quantity_unit: string
+          quantity_used: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_name: string
+          package_price?: number
+          package_quantity?: number
+          package_unit?: string
+          product_id: string
+          quantity_unit?: string
+          quantity_used?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_name?: string
+          package_price?: number
+          package_quantity?: number
+          package_unit?: string
+          product_id?: string
+          quantity_unit?: string
+          quantity_used?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       remote_orders: {
         Row: {
           billing_date: string | null
