@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/admin/products', label: 'Estoque', icon: Package },
+  { path: '/admin/calculator', label: 'Calculadora', icon: Calculator },
   { path: '/admin/finances', label: 'Financeiro', icon: DollarSign },
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingCart },
   { path: '/admin/coupons', label: 'Cupons', icon: Tag },
