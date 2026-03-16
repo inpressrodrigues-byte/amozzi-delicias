@@ -1,0 +1,1 @@
+ALTER TABLE public.site_settings ADD COLUMN IF NOT EXISTS store_hours jsonb DEFAULT '{"enabled":false,"weekday_open":"19:30","weekday_close":"22:00","weekend_open":"10:00","weekend_close":"22:00","closed_message":"Estamos fechados no momento. Os pedidos serão separados no próximo horário de funcionamento."}'::jsonb;
