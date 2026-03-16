@@ -91,6 +91,8 @@ const Settings = () => {
       if (Array.isArray(zones)) setDeliveryZones(zones);
       const cats = (settings as any).product_categories;
       if (Array.isArray(cats) && cats.length > 0) setProductCategories(cats);
+      const sh = (settings as any).store_hours;
+      if (sh) setStoreHours(prev => ({ ...prev, ...sh }));
     }
   }, [settings]);
 
