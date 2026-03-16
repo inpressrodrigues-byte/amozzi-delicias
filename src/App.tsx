@@ -20,6 +20,7 @@ import Customers from "./pages/admin/Customers";
 import Profiles from "./pages/admin/Profiles";
 import Ideas from "./pages/admin/Ideas";
 import TrackOrder from "./pages/TrackOrder";
+import CostCalculator from "./pages/admin/CostCalculator";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import MyOrders from "./pages/MyOrders";
 import NotFound from "./pages/NotFound";
