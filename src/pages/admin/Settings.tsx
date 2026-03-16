@@ -128,7 +128,7 @@ const Settings = () => {
 
       const { error } = await supabase
         .from('site_settings')
-        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones, product_categories: productCategories } as any)
+        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones, product_categories: productCategories, store_hours: storeHours } as any)
         .eq('id', settings!.id);
 
       if (error) throw error;
