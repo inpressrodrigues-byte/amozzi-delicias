@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Loader2, Gift, CreditCard, Tag, CheckCircle2, Copy, QrCode } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Gift, CreditCard, Tag, CheckCircle2, Copy, QrCode, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 const Checkout = () => {
