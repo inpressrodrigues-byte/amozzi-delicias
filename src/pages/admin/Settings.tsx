@@ -318,6 +318,62 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> Horário de Funcionamento</CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="store-hours-toggle" className="text-sm text-muted-foreground">Ativar</Label>
+                <Switch
+                  id="store-hours-toggle"
+                  checked={storeHours.enabled}
+                  onCheckedChange={v => setStoreHours(h => ({ ...h, enabled: v }))}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          {storeHours.enabled && (
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-2">Segunda a Sexta</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Abre às</Label>
+                    <Input type="time" value={storeHours.weekday_open} onChange={e => setStoreHours(h => ({ ...h, weekday_open: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Fecha às</Label>
+                    <Input type="time" value={storeHours.weekday_close} onChange={e => setStoreHours(h => ({ ...h, weekday_close: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-2">Sábado e Domingo</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Abre às</Label>
+                    <Input type="time" value={storeHours.weekend_open} onChange={e => setStoreHours(h => ({ ...h, weekend_open: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Fecha às</Label>
+                    <Input type="time" value={storeHours.weekend_close} onChange={e => setStoreHours(h => ({ ...h, weekend_close: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <Label>Mensagem quando fechado</Label>
+                <Input
+                  value={storeHours.closed_message}
+                  onChange={e => setStoreHours(h => ({ ...h, closed_message: e.target.value }))}
+                  placeholder="Ex: Estamos fechados no momento..."
+                  maxLength={300}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Quando ativado, o site mostra se a loja está aberta ou fechada. Pedidos ainda podem ser feitos, mas o cliente será informado sobre o horário.</p>
+            </CardContent>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
               <CardTitle>Zonas de Entrega (Taxa por Bairro)</CardTitle>
               <Button size="sm" variant="outline" onClick={addZone}><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
             </div>
