@@ -19,6 +19,7 @@ const Header = ({ onCartClick }: { onCartClick: () => void }) => {
 
   const navLinks = [
     { href: '#produtos', label: 'Cardápio' },
+    { href: '#encomendas', label: 'Encomendas' },
     { href: '#sobre', label: 'Sobre Nós' },
     { href: '#contato', label: 'Contato' },
     { href: '/meus-pedidos', label: 'Meus Pedidos', isRoute: true },

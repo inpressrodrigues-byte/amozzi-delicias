@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Loader2, Gift, CreditCard, Tag, CheckCircle2, Copy, QrCode } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Gift, CreditCard, Tag, CheckCircle2, Copy, QrCode, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 const Checkout = () => {
@@ -319,6 +319,28 @@ const Checkout = () => {
         <Card className="border-border/50 shadow-lg">
           <CardHeader>
             <CardTitle className="font-display text-2xl">Finalizar Pedido</CardTitle>
+            {(() => {
+              const sh = (settings as any)?.store_hours;
+              if (!sh?.enabled) return null;
+              const now = new Date();
+              const day = now.getDay();
+              const isWeekend = day === 0 || day === 6;
+              const openTime = isWeekend ? sh.weekend_open : sh.weekday_open;
+              const closeTime = isWeekend ? sh.weekend_close : sh.weekday_close;
+              const [oh, om] = (openTime || '19:30').split(':').map(Number);
+              const [ch, cm] = (closeTime || '22:00').split(':').map(Number);
+              const currentMin = now.getHours() * 60 + now.getMinutes();
+              const isOpen = currentMin >= oh * 60 + om && currentMin < ch * 60 + cm;
+              if (isOpen) return null;
+              return (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2 mt-2">
+                  <Clock className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-sm text-amber-700">
+                    Estamos fora do horário de funcionamento. Seu pedido será separado a partir das <strong>{openTime}</strong> ({isWeekend ? 'fim de semana' : 'seg-sex'}).
+                  </p>
+                </div>
+              );
+            })()}
           </CardHeader>
           <CardContent>
             {/* Order Summary */}

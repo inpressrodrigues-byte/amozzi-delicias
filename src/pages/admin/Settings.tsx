@@ -9,7 +9,8 @@ import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Save, Plus, Trash2, QrCode } from 'lucide-react';
+import { Save, Plus, Trash2, QrCode, Clock } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 interface DeliveryZone {
   name: string;
@@ -48,6 +49,14 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [pixKey, setPixKey] = useState('');
   const [pixName, setPixName] = useState('');
+  const [storeHours, setStoreHours] = useState({
+    enabled: false,
+    weekday_open: '19:30',
+    weekday_close: '22:00',
+    weekend_open: '10:00',
+    weekend_close: '22:00',
+    closed_message: 'Estamos fechados no momento. Os pedidos serão separados no próximo horário de funcionamento.',
+  });
 
   const { data: billingSettings } = useQuery({
     queryKey: ['billing-settings'],
@@ -82,6 +91,8 @@ const Settings = () => {
       if (Array.isArray(zones)) setDeliveryZones(zones);
       const cats = (settings as any).product_categories;
       if (Array.isArray(cats) && cats.length > 0) setProductCategories(cats);
+      const sh = (settings as any).store_hours;
+      if (sh) setStoreHours(prev => ({ ...prev, ...sh }));
     }
   }, [settings]);
 
@@ -117,7 +128,7 @@ const Settings = () => {
 
       const { error } = await supabase
         .from('site_settings')
-        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones, product_categories: productCategories } as any)
+        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones, product_categories: productCategories, store_hours: storeHours } as any)
         .eq('id', settings!.id);
 
       if (error) throw error;
@@ -302,6 +313,62 @@ const Settings = () => {
             </div>
             <p className="text-xs text-muted-foreground">As categorias aparecem no cardápio público e no formulário de produtos.</p>
           </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> Horário de Funcionamento</CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="store-hours-toggle" className="text-sm text-muted-foreground">Ativar</Label>
+                <Switch
+                  id="store-hours-toggle"
+                  checked={storeHours.enabled}
+                  onCheckedChange={v => setStoreHours(h => ({ ...h, enabled: v }))}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          {storeHours.enabled && (
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-2">Segunda a Sexta</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Abre às</Label>
+                    <Input type="time" value={storeHours.weekday_open} onChange={e => setStoreHours(h => ({ ...h, weekday_open: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Fecha às</Label>
+                    <Input type="time" value={storeHours.weekday_close} onChange={e => setStoreHours(h => ({ ...h, weekday_close: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-2">Sábado e Domingo</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Abre às</Label>
+                    <Input type="time" value={storeHours.weekend_open} onChange={e => setStoreHours(h => ({ ...h, weekend_open: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Fecha às</Label>
+                    <Input type="time" value={storeHours.weekend_close} onChange={e => setStoreHours(h => ({ ...h, weekend_close: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <Label>Mensagem quando fechado</Label>
+                <Input
+                  value={storeHours.closed_message}
+                  onChange={e => setStoreHours(h => ({ ...h, closed_message: e.target.value }))}
+                  placeholder="Ex: Estamos fechados no momento..."
+                  maxLength={300}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Quando ativado, o site mostra se a loja está aberta ou fechada. Pedidos ainda podem ser feitos, mas o cliente será informado sobre o horário.</p>
+            </CardContent>
+          )}
         </Card>
 
         <Card>
