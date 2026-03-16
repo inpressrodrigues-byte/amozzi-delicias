@@ -9,7 +9,8 @@ import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Save, Plus, Trash2, QrCode } from 'lucide-react';
+import { Save, Plus, Trash2, QrCode, Clock } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 interface DeliveryZone {
   name: string;
