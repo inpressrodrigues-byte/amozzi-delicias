@@ -30,7 +30,7 @@ const HeroSection = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             src={settings.logo_url}
             alt="AMOZI"
-            className="h-28 md:h-36 w-auto mx-auto mb-8 drop-shadow-2xl"
+            className="h-20 sm:h-28 md:h-36 w-auto mx-auto mb-4 sm:mb-8 drop-shadow-2xl"
           />
         )}
         <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
