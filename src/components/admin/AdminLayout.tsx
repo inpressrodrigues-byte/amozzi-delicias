@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database, UserCog, Lightbulb, Calculator, ChefHat } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
-const navItems = [
+export const allNavItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/admin/products', label: 'Estoque', icon: Package },
   { path: '/admin/calculator', label: 'Calculadora', icon: Calculator },
