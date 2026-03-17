@@ -16,6 +16,7 @@ import Settings from "./pages/admin/Settings";
 import Coupons from "./pages/admin/Coupons";
 import RemoteOrders from "./pages/admin/RemoteOrders";
 import InternalControl from "./pages/admin/InternalControl";
+import Recipes from "./pages/admin/Recipes";
 import Customers from "./pages/admin/Customers";
 import Profiles from "./pages/admin/Profiles";
 import Ideas from "./pages/admin/Ideas";
