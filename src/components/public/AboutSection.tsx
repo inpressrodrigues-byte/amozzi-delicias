@@ -42,7 +42,7 @@ const AboutSection = () => {
           className="max-w-3xl mx-auto text-center"
         >
           <span className="text-accent font-semibold text-sm uppercase tracking-[0.3em]">Nossa História</span>
-          <h2 className="font-display text-4xl md:text-5xl font-bold mt-2 mb-6 text-foreground">Sobre Nós</h2>
+          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-2 mb-6 text-foreground">Sobre Nós</h2>
           <p className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line">
             {settings?.about_text || 'Somos a AMOZI, uma empresa dedicada a criar delícias artesanais com ingredientes selecionados e muito amor. Cada bolo no pote e marmita salgada é preparado com carinho, trazendo sabores que aquecem o coração.'}
           </p>

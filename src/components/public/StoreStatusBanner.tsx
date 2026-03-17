@@ -55,14 +55,14 @@ const StoreStatusBanner = () => {
   if (!hours.enabled) return null;
 
   return (
-    <div className={`w-full py-2.5 px-4 text-center text-sm font-medium flex items-center justify-center gap-2 ${
+    <div className={`w-full py-2 px-3 text-center text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 flex-wrap ${
       isOpen
         ? 'bg-green-500/10 text-green-700 border-b border-green-500/20'
         : 'bg-amber-500/10 text-amber-700 border-b border-amber-500/20'
     }`}>
-      {isOpen ? <Store className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
-      <span>{isOpen ? '🟢 Loja Aberta' : '🔴 Loja Fechada'}</span>
-      <span className="text-xs opacity-75 ml-1">— {message}</span>
+      {isOpen ? <Store className="h-3.5 w-3.5 shrink-0" /> : <Clock className="h-3.5 w-3.5 shrink-0" />}
+      <span className="shrink-0">{isOpen ? '🟢 Aberta' : '🔴 Fechada'}</span>
+      <span className="text-[10px] sm:text-xs opacity-75">— {message}</span>
     </div>
   );
 };

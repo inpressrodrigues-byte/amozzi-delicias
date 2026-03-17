@@ -40,13 +40,13 @@ const ProductsSection = () => {
         </motion.div>
 
         {/* Category tabs */}
-        <div className="flex justify-center mb-12">
-          <div className="inline-flex bg-muted rounded-full p-1 gap-1">
+        <div className="flex justify-center mb-12 overflow-x-auto px-1 -mx-1 scrollbar-hide">
+          <div className="inline-flex bg-muted rounded-full p-1 gap-1 min-w-0">
             {categories.map(cat => (
               <button
                 key={cat.key}
                 onClick={() => setFilter(cat.key)}
-                className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${
+                className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
                   filter === cat.key
                     ? 'bg-primary text-primary-foreground shadow-md'
                     : 'text-muted-foreground hover:text-foreground'
@@ -59,9 +59,9 @@ const ProductsSection = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-96 rounded-2xl" />
+              <Skeleton key={i} className="h-72 sm:h-96 rounded-2xl" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -70,7 +70,7 @@ const ProductsSection = () => {
             <p className="text-muted-foreground text-lg">Nenhum produto disponível no momento.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             {filtered.map(product => (
               <ProductCard key={product.id} product={{ ...product, tags: (product.tags as string[] | null) ?? [] }} />
             ))}

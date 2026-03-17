@@ -10,7 +10,7 @@ const HeroSection = () => {
   const bgImage = (settings as any)?.hero_image_url || heroBg;
 
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[70vh] sm:min-h-[85vh] flex items-center justify-center overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
@@ -21,7 +21,7 @@ const HeroSection = () => {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, ease: 'easeOut' }}
-        className="relative z-10 text-center px-4 max-w-4xl mx-auto"
+        className="relative z-10 text-center px-5 max-w-4xl mx-auto"
       >
         {settings?.logo_url && (
           <motion.img
@@ -30,13 +30,13 @@ const HeroSection = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             src={settings.logo_url}
             alt="AMOZI"
-            className="h-28 md:h-36 w-auto mx-auto mb-8 drop-shadow-2xl"
+            className="h-20 sm:h-28 md:h-36 w-auto mx-auto mb-4 sm:mb-8 drop-shadow-2xl"
           />
         )}
-        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
+        <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 sm:mb-6 drop-shadow-lg">
           {settings?.hero_title || 'AMOZI Delícias no Pote'}
         </h1>
-        <p className="text-lg md:text-xl text-white/80 mb-10 font-light max-w-2xl mx-auto leading-relaxed">
+        <p className="text-base sm:text-lg md:text-xl text-white/80 mb-6 sm:mb-10 font-light max-w-2xl mx-auto leading-relaxed">
           {settings?.hero_subtitle || 'Bolos no pote artesanais feitos com amor e ingredientes selecionados'}
         </p>
         <Button

@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Check, Clock, ChefHat, Truck, Package, Star } from 'lucide-react';
+import { ArrowLeft, Check, Clock, ChefHat, Truck, Package, Star, Bell } from 'lucide-react';
+import { toast } from 'sonner';
 
 const STEPS = [
   { key: 'pending', label: 'Pedido Recebido', icon: Clock, description: 'Seu pedido foi registrado' },
@@ -13,6 +14,13 @@ const STEPS = [
   { key: 'delivering', label: 'Saiu para Entrega', icon: Truck, description: 'Seu pedido está a caminho' },
   { key: 'delivered', label: 'Entregue', icon: Package, description: 'Pedido entregue com sucesso!' },
 ];
+
+const STATUS_MESSAGES: Record<string, string> = {
+  pending: '📋 Pedido recebido!',
+  preparing: '👨‍🍳 Seu pedido está sendo preparado!',
+  delivering: '🚚 Seu pedido saiu para entrega!',
+  delivered: '✅ Seu pedido foi entregue!',
+};
 
 const TrackOrder = () => {
   const { code } = useParams<{ code: string }>();
@@ -24,6 +32,8 @@ const TrackOrder = () => {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const prevStatusRef = useRef<string | null>(null);
 
   const fetchOrder = async (trackingCode: string) => {
     setLoading(true);
@@ -32,7 +42,9 @@ const TrackOrder = () => {
         body: { tracking_code: trackingCode },
       });
       if (error) throw error;
-      setOrder(data?.order || null);
+      const orderData = data?.order || null;
+      setOrder(orderData);
+      if (orderData) prevStatusRef.current = orderData.status;
     } catch {
       setOrder(null);
     }
@@ -44,14 +56,71 @@ const TrackOrder = () => {
     else setLoading(false);
   }, [code]);
 
-  // Poll for updates every 15 seconds instead of realtime (no public SELECT policy)
+  // Request browser notification permission
+  const requestNotifications = async () => {
+    if (!('Notification' in window)) {
+      toast.info('Seu navegador não suporta notificações');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      setNotificationsEnabled(true);
+      toast.success('Notificações ativadas! 🔔');
+    } else {
+      toast.error('Permissão de notificação negada');
+    }
+  };
+
+  // Check if notifications are already granted
   useEffect(() => {
-    if (!order?.tracking_code) return;
-    const interval = setInterval(() => {
-      fetchOrder(order.tracking_code);
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [order?.tracking_code]);
+    if ('Notification' in window && Notification.permission === 'granted') {
+      setNotificationsEnabled(true);
+    }
+  }, []);
+
+  // Realtime subscription for order updates
+  useEffect(() => {
+    if (!order?.id) return;
+
+    const channel = supabase
+      .channel(`order-track-${order.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${order.id}`,
+        },
+        (payload) => {
+          const newStatus = (payload.new as any).status;
+          const oldStatus = prevStatusRef.current;
+
+          if (newStatus && newStatus !== oldStatus) {
+            prevStatusRef.current = newStatus;
+            // Re-fetch via edge function to get filtered data
+            fetchOrder(order.tracking_code);
+
+            // Show toast notification
+            const message = STATUS_MESSAGES[newStatus] || `Status atualizado: ${newStatus}`;
+            toast.success(message, { duration: 6000 });
+
+            // Show browser notification
+            if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+              new Notification('AMOZI - Atualização do Pedido', {
+                body: message,
+                icon: '/favicon.ico',
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [order?.id, order?.tracking_code, notificationsEnabled]);
 
   // Show feedback 10min after delivered
   useEffect(() => {
@@ -123,6 +192,22 @@ const TrackOrder = () => {
                   Pedido <span className="font-mono text-primary">{order.tracking_code}</span>
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">{order.customer_name} — {new Date(order.created_at).toLocaleDateString('pt-BR')}</p>
+                {!notificationsEnabled && order.status !== 'delivered' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 rounded-full text-xs gap-1.5"
+                    onClick={requestNotifications}
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                    Ativar notificações em tempo real
+                  </Button>
+                )}
+                {notificationsEnabled && order.status !== 'delivered' && (
+                  <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                    <Bell className="h-3 w-3" /> Notificações ativas — você será avisado em tempo real
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 {/* Status tracker with green checks */}
