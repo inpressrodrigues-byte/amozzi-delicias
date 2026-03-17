@@ -57,16 +57,16 @@ const ProductCard = ({ product }: { product: Product }) => {
             </div>
           )}
           {/* Category badge */}
-          <span className="absolute top-3 left-3 bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-accent text-accent-foreground text-[8px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
             {categoryLabel}
           </span>
           {/* Tags badges (fitness, zero sugar, etc.) */}
           {product.tags && (product.tags as string[]).length > 0 && (
-            <div className="absolute top-3 right-3 flex flex-col gap-1">
-              {(product.tags as string[]).map((tag: string) => (
+            <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-0.5 sm:gap-1">
+              {(product.tags as string[]).slice(0, 2).map((tag: string) => (
                 <span
                   key={tag}
-                  className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full shadow-md ${
+                  className={`text-[7px] sm:text-[9px] font-extrabold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full shadow-md ${
                     tag === 'fitness' ? 'bg-emerald-500 text-white' :
                     tag === 'zero_acucar' ? 'bg-sky-500 text-white' :
                     tag === 'vegano' ? 'bg-lime-500 text-white' :
@@ -74,11 +74,11 @@ const ProductCard = ({ product }: { product: Product }) => {
                     'bg-primary text-primary-foreground'
                   }`}
                 >
-                  {tag === 'fitness' ? '💪 FITNESS' :
-                   tag === 'zero_acucar' ? '🚫 ZERO AÇÚCAR' :
-                   tag === 'vegano' ? '🌱 VEGANO' :
-                   tag === 'sem_gluten' ? '🌾 SEM GLÚTEN' :
-                   tag.toUpperCase()}
+                  {tag === 'fitness' ? '💪 FIT' :
+                   tag === 'zero_acucar' ? '🚫 ZERO' :
+                   tag === 'vegano' ? '🌱 VEG' :
+                   tag === 'sem_gluten' ? '🌾 S/G' :
+                   tag.toUpperCase().slice(0, 6)}
                 </span>
               ))}
             </div>
