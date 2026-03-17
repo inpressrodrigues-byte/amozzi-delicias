@@ -90,6 +90,14 @@ const Dashboard = () => {
     },
   });
 
+  const { data: allManualRecords } = useQuery({
+    queryKey: ['admin-all-manual-records'],
+    queryFn: async () => {
+      const { data } = await supabase.from('manual_records').select('*');
+      return data ?? [];
+    },
+  });
+
   // Product price map
   const priceMap = useMemo(() => {
     return new Map((allProducts ?? []).map(p => [p.id, Number(p.price)]));
