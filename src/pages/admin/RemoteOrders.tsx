@@ -126,6 +126,9 @@ const RemoteOrders = () => {
   const [submitting, setSubmitting] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [pixQrFile, setPixQrFile] = useState<File | null>(null);
+  // Standalone billing state
+  const [avulsoOpen, setAvulsoOpen] = useState(false);
+  const [avulsoForm, setAvulsoForm] = useState({ name: '', sector: '', whatsapp: '', billing_date: new Date().toISOString().split('T')[0], notes: '' });
   // Filter state
   const [filterName, setFilterName] = useState('');
   const [filterPayment, setFilterPayment] = useState<string>('all');
