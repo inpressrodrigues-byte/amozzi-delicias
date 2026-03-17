@@ -78,49 +78,38 @@ const TrackOrder = () => {
     }
   }, []);
 
-  // Realtime subscription for order updates
+  // Poll for order updates every 10 seconds (realtime requires auth which customers don't have)
   useEffect(() => {
-    if (!order?.id) return;
+    if (!order?.tracking_code) return;
 
-    const channel = supabase
-      .channel(`order-track-${order.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `id=eq.${order.id}`,
-        },
-        (payload) => {
-          const newStatus = (payload.new as any).status;
-          const oldStatus = prevStatusRef.current;
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await supabase.functions.invoke('track-order', {
+          body: { tracking_code: order.tracking_code },
+        });
+        const newOrder = data?.order;
+        if (newOrder && newOrder.status !== prevStatusRef.current) {
+          const newStatus = newOrder.status;
+          prevStatusRef.current = newStatus;
+          setOrder(newOrder);
 
-          if (newStatus && newStatus !== oldStatus) {
-            prevStatusRef.current = newStatus;
-            // Re-fetch via edge function to get filtered data
-            fetchOrder(order.tracking_code);
+          // Show toast notification
+          const message = STATUS_MESSAGES[newStatus] || `Status atualizado: ${newStatus}`;
+          toast.success(message, { duration: 6000 });
 
-            // Show toast notification
-            const message = STATUS_MESSAGES[newStatus] || `Status atualizado: ${newStatus}`;
-            toast.success(message, { duration: 6000 });
-
-            // Show browser notification
-            if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
-              new Notification('AMOZI - Atualização do Pedido', {
-                body: message,
-                icon: '/favicon.ico',
-              });
-            }
+          // Show browser notification
+          if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('AMOZI - Atualização do Pedido', {
+              body: message,
+              icon: '/favicon.ico',
+            });
           }
         }
-      )
-      .subscribe();
+      } catch {}
+    }, 10000);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [order?.id, order?.tracking_code, notificationsEnabled]);
+    return () => clearInterval(interval);
+  }, [order?.tracking_code, notificationsEnabled]);
 
   // Show feedback 10min after delivered
   useEffect(() => {

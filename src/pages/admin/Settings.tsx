@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { allNavItems } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,7 @@ import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Save, Plus, Trash2, QrCode, Clock } from 'lucide-react';
+import { Save, Plus, Trash2, QrCode, Clock, Eye } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
 interface DeliveryZone {
@@ -57,6 +58,7 @@ const Settings = () => {
     weekend_close: '22:00',
     closed_message: 'Estamos fechados no momento. Os pedidos serão separados no próximo horário de funcionamento.',
   });
+  const [hiddenMenus, setHiddenMenus] = useState<string[]>([]);
 
   const { data: billingSettings } = useQuery({
     queryKey: ['billing-settings'],
@@ -93,6 +95,8 @@ const Settings = () => {
       if (Array.isArray(cats) && cats.length > 0) setProductCategories(cats);
       const sh = (settings as any).store_hours;
       if (sh) setStoreHours(prev => ({ ...prev, ...sh }));
+      const hm = (settings as any).hidden_admin_menus;
+      if (Array.isArray(hm)) setHiddenMenus(hm);
     }
   }, [settings]);
 
@@ -128,7 +132,7 @@ const Settings = () => {
 
       const { error } = await supabase
         .from('site_settings')
-        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones, product_categories: productCategories, store_hours: storeHours } as any)
+        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones, product_categories: productCategories, store_hours: storeHours, hidden_admin_menus: hiddenMenus } as any)
         .eq('id', settings!.id);
 
       if (error) throw error;
@@ -369,6 +373,33 @@ const Settings = () => {
               <p className="text-xs text-muted-foreground">Quando ativado, o site mostra se a loja está aberta ou fechada. Pedidos ainda podem ser feitos, mas o cliente será informado sobre o horário.</p>
             </CardContent>
           )}
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" /> Menu do Painel (Ocultar/Mostrar)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground mb-2">Desative os itens que não deseja ver no menu lateral do painel admin.</p>
+            {allNavItems.filter(item => item.path !== '/admin' && item.path !== '/admin/settings').map(item => (
+              <div key={item.path} className="flex items-center justify-between py-1.5">
+                <div className="flex items-center gap-2 text-sm">
+                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                  {item.label}
+                </div>
+                <Switch
+                  checked={!hiddenMenus.includes(item.path)}
+                  onCheckedChange={(checked) => {
+                    setHiddenMenus(prev => 
+                      checked ? prev.filter(p => p !== item.path) : [...prev, item.path]
+                    );
+                  }}
+                />
+              </div>
+            ))}
+          </CardContent>
         </Card>
 
         <Card>

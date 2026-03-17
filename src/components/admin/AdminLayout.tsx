@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database, UserCog, Lightbulb, Calculator, ChefHat } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
-const navItems = [
+export const allNavItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/admin/products', label: 'Estoque', icon: Package },
   { path: '/admin/calculator', label: 'Calculadora', icon: Calculator },
@@ -22,6 +23,9 @@ const navItems = [
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
+  const { data: siteSettings } = useSiteSettings();
+  const hiddenMenus: string[] = (siteSettings as any)?.hidden_admin_menus || [];
+  const navItems = allNavItems.filter(item => !hiddenMenus.includes(item.path));
   const { user, isAdmin, loading, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
