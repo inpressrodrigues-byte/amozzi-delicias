@@ -377,6 +377,33 @@ const Settings = () => {
 
         <Card>
           <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" /> Menu do Painel (Ocultar/Mostrar)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground mb-2">Desative os itens que não deseja ver no menu lateral do painel admin.</p>
+            {allNavItems.filter(item => item.path !== '/admin' && item.path !== '/admin/settings').map(item => (
+              <div key={item.path} className="flex items-center justify-between py-1.5">
+                <div className="flex items-center gap-2 text-sm">
+                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                  {item.label}
+                </div>
+                <Switch
+                  checked={!hiddenMenus.includes(item.path)}
+                  onCheckedChange={(checked) => {
+                    setHiddenMenus(prev => 
+                      checked ? prev.filter(p => p !== item.path) : [...prev, item.path]
+                    );
+                  }}
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Zonas de Entrega (Taxa por Bairro)</CardTitle>
               <Button size="sm" variant="outline" onClick={addZone}><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
