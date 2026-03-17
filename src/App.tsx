@@ -48,6 +48,7 @@ const App = () => (
               <Route path="/admin/coupons" element={<Coupons />} />
               <Route path="/admin/remote-orders" element={<RemoteOrders />} />
               <Route path="/admin/internal" element={<InternalControl />} />
+              <Route path="/admin/recipes" element={<Recipes />} />
               <Route path="/admin/customers" element={<Customers />} />
               <Route path="/admin/profiles" element={<Profiles />} />
               <Route path="/admin/calculator" element={<CostCalculator />} />
