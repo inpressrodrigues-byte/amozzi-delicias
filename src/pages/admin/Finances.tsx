@@ -4,215 +4,412 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign, FileSpreadsheet } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign, ShoppingBag, FileSpreadsheet, Filter } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import * as XLSX from 'xlsx';
+
+type RecordType = 'compra' | 'venda' | 'entrada' | 'saida';
+
+const typeLabels: Record<RecordType, string> = { compra: 'Compra', venda: 'Venda', entrada: 'Entrada', saida: 'Saída' };
+const typeColors: Record<RecordType, string> = { compra: 'text-orange-600', venda: 'text-green-600', entrada: 'text-blue-600', saida: 'text-destructive' };
+
+const CATEGORIES = ['ingrediente', 'embalagem', 'transporte', 'equipamento', 'marketing', 'pessoal', 'aluguel', 'geral'];
+const PERIODS = [
+  { label: '7 dias', days: 7 },
+  { label: '30 dias', days: 30 },
+  { label: '90 dias', days: 90 },
+  { label: '12 meses', days: 365 },
+  { label: 'Tudo', days: 0 },
+];
+const CHART_COLORS = ['hsl(25, 80%, 55%)', 'hsl(140, 50%, 40%)', 'hsl(210, 70%, 50%)', 'hsl(0, 84%, 60%)', 'hsl(270, 60%, 55%)', 'hsl(45, 80%, 50%)', 'hsl(180, 50%, 40%)', 'hsl(320, 60%, 50%)'];
 
 const Finances = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ description: '', amount: '', category: 'ingrediente', date: new Date().toISOString().split('T')[0] });
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [period, setPeriod] = useState(30);
+  const [filterType, setFilterType] = useState<string>('all');
+
+  // Manual record form
+  const [form, setForm] = useState({
+    type: 'compra' as RecordType, description: '', amount: '', category: 'geral',
+    supplier: '', customer_name: '', date: new Date().toISOString().split('T')[0], notes: '',
+  });
+
+  // Expense form
+  const [expenseForm, setExpenseForm] = useState({
+    description: '', amount: '', category: 'ingrediente', date: new Date().toISOString().split('T')[0],
+  });
+
+  const cutoffDate = period > 0 ? new Date(Date.now() - period * 86400000).toISOString().split('T')[0] : undefined;
+
+  // Queries
+  const { data: records } = useQuery({
+    queryKey: ['manual-records', cutoffDate],
+    queryFn: async () => {
+      let query = supabase.from('manual_records').select('*').order('date', { ascending: false });
+      if (cutoffDate) query = query.gte('date', cutoffDate);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: expenses } = useQuery({
-    queryKey: ['admin-expenses'],
+    queryKey: ['admin-expenses', cutoffDate],
     queryFn: async () => {
-      const { data, error } = await supabase.from('expenses').select('*').order('date', { ascending: false });
+      let query = supabase.from('expenses').select('*').order('date', { ascending: false });
+      if (cutoffDate) query = query.gte('date', cutoffDate);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
   const { data: orders } = useQuery({
-    queryKey: ['admin-orders-finance'],
+    queryKey: ['admin-orders-finance', cutoffDate],
     queryFn: async () => {
-      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+      if (cutoffDate) query = query.gte('created_at', cutoffDate);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
-  const totalRevenue = orders?.reduce((sum, o) => sum + Number(o.total), 0) ?? 0;
-  const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) ?? 0;
-  const profit = totalRevenue - totalExpenses;
+  // Combined data
+  const allExpenseItems = [
+    ...(expenses?.map(e => ({ ...e, source: 'expense' as const, type: 'saida' as RecordType })) ?? []),
+    ...(records ?? []),
+  ];
 
+  const filtered = filterType === 'all' ? allExpenseItems : allExpenseItems.filter(r => r.type === filterType);
+
+  // Calculations
+  const totalCompras = records?.filter(r => r.type === 'compra').reduce((s, r) => s + Number(r.amount), 0) ?? 0;
+  const totalVendasManual = records?.filter(r => r.type === 'venda').reduce((s, r) => s + Number(r.amount), 0) ?? 0;
+  const totalEntradas = records?.filter(r => r.type === 'entrada').reduce((s, r) => s + Number(r.amount), 0) ?? 0;
+  const totalSaidasManual = records?.filter(r => r.type === 'saida').reduce((s, r) => s + Number(r.amount), 0) ?? 0;
+  const totalExpensesTable = expenses?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
+  const totalOrderRevenue = orders?.reduce((s, o) => s + Number(o.total), 0) ?? 0;
+
+  const totalReceitas = totalOrderRevenue + totalVendasManual + totalEntradas;
+  const totalGastos = totalCompras + totalSaidasManual + totalExpensesTable;
+  const lucro = totalReceitas - totalGastos;
+
+  // Add manual record
+  const addRecord = async () => {
+    if (!form.description || !form.amount) { toast.error('Preencha descrição e valor'); return; }
+    const { error } = await supabase.from('manual_records').insert({
+      type: form.type, description: form.description, amount: parseFloat(form.amount),
+      category: form.category, supplier: form.supplier, customer_name: form.customer_name,
+      date: form.date, notes: form.notes,
+    });
+    if (error) { toast.error('Erro ao salvar'); return; }
+    toast.success('Registro adicionado!');
+    queryClient.invalidateQueries({ queryKey: ['manual-records'] });
+    setDialogOpen(false);
+    setForm({ type: 'compra', description: '', amount: '', category: 'geral', supplier: '', customer_name: '', date: new Date().toISOString().split('T')[0], notes: '' });
+  };
+
+  // Add expense
   const addExpense = async () => {
     if (!expenseForm.description || !expenseForm.amount) { toast.error('Preencha todos os campos'); return; }
     const { error } = await supabase.from('expenses').insert({
-      description: expenseForm.description,
-      amount: parseFloat(expenseForm.amount),
-      category: expenseForm.category,
-      date: expenseForm.date,
+      description: expenseForm.description, amount: parseFloat(expenseForm.amount),
+      category: expenseForm.category, date: expenseForm.date,
     });
     if (error) { toast.error('Erro ao adicionar gasto'); return; }
     toast.success('Gasto adicionado!');
     queryClient.invalidateQueries({ queryKey: ['admin-expenses'] });
-    setDialogOpen(false);
+    setExpenseDialogOpen(false);
     setExpenseForm({ description: '', amount: '', category: 'ingrediente', date: new Date().toISOString().split('T')[0] });
   };
 
-  const deleteExpense = async (id: string) => {
-    if (!confirm('Excluir este gasto?')) return;
-    await supabase.from('expenses').delete().eq('id', id);
-    queryClient.invalidateQueries({ queryKey: ['admin-expenses'] });
-    toast.success('Gasto excluído');
+  const deleteRecord = async (id: string, source?: string) => {
+    if (!confirm('Excluir este registro?')) return;
+    if (source === 'expense') {
+      await supabase.from('expenses').delete().eq('id', id);
+      queryClient.invalidateQueries({ queryKey: ['admin-expenses'] });
+    } else {
+      await supabase.from('manual_records').delete().eq('id', id);
+      queryClient.invalidateQueries({ queryKey: ['manual-records'] });
+    }
+    toast.success('Registro excluído');
   };
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
 
-    // Receitas sheet
+    // Receitas
     const revenueData = orders?.map(o => ({
       'Data': new Date(o.created_at).toLocaleDateString('pt-BR'),
-      'Cliente': o.customer_name,
-      'Total (R$)': Number(o.total).toFixed(2),
-      'Status': o.status,
+      'Cliente': o.customer_name, 'Total (R$)': Number(o.total).toFixed(2), 'Status': o.status,
     })) || [];
-    const wsRevenue = XLSX.utils.json_to_sheet(revenueData);
-    XLSX.utils.book_append_sheet(wb, wsRevenue, 'Receitas');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(revenueData), 'Pedidos');
 
-    // Gastos sheet
+    // Gastos
     const expenseData = expenses?.map(e => ({
-      'Data': new Date(e.date).toLocaleDateString('pt-BR'),
-      'Descrição': e.description,
-      'Categoria': e.category || 'ingrediente',
-      'Valor (R$)': Number(e.amount).toFixed(2),
+      'Data': new Date(e.date).toLocaleDateString('pt-BR'), 'Descrição': e.description,
+      'Categoria': e.category || 'ingrediente', 'Valor (R$)': Number(e.amount).toFixed(2),
     })) || [];
-    const wsExpenses = XLSX.utils.json_to_sheet(expenseData);
-    XLSX.utils.book_append_sheet(wb, wsExpenses, 'Gastos');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expenseData), 'Gastos');
 
-    // Resumo sheet
+    // Controle manual
+    const manualData = records?.map(r => ({
+      'Data': new Date(r.date).toLocaleDateString('pt-BR'),
+      'Tipo': typeLabels[r.type as RecordType] || r.type,
+      'Descrição': r.description, 'Categoria': r.category,
+      'Valor (R$)': Number(r.amount).toFixed(2), 'Obs': r.notes,
+    })) || [];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(manualData), 'Controle Manual');
+
+    // Resumo
     const summary = [
-      { 'Descrição': 'Receita Total', 'Valor (R$)': totalRevenue.toFixed(2) },
-      { 'Descrição': 'Gastos Totais', 'Valor (R$)': totalExpenses.toFixed(2) },
-      { 'Descrição': 'Lucro Líquido', 'Valor (R$)': profit.toFixed(2) },
+      { 'Item': 'Receita Pedidos', 'Valor (R$)': totalOrderRevenue.toFixed(2) },
+      { 'Item': 'Vendas Manuais', 'Valor (R$)': totalVendasManual.toFixed(2) },
+      { 'Item': 'Entradas', 'Valor (R$)': totalEntradas.toFixed(2) },
+      { 'Item': 'Gastos (despesas)', 'Valor (R$)': totalExpensesTable.toFixed(2) },
+      { 'Item': 'Compras', 'Valor (R$)': totalCompras.toFixed(2) },
+      { 'Item': 'Saídas', 'Valor (R$)': totalSaidasManual.toFixed(2) },
+      { 'Item': 'LUCRO', 'Valor (R$)': lucro.toFixed(2) },
     ];
-    const wsSummary = XLSX.utils.json_to_sheet(summary);
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo');
-
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), 'Resumo');
     XLSX.writeFile(wb, `AMOZI_Financeiro_${new Date().toISOString().split('T')[0]}.xlsx`);
     toast.success('Planilha exportada!');
   };
 
   // Chart data
-  const chartData = (() => {
-    const months: Record<string, { month: string; receita: number; gastos: number }> = {};
+  const monthlyData = (() => {
+    const months: Record<string, { month: string; receitas: number; gastos: number }> = {};
     orders?.forEach(o => {
       const m = new Date(o.created_at).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-      if (!months[m]) months[m] = { month: m, receita: 0, gastos: 0 };
-      months[m].receita += Number(o.total);
+      if (!months[m]) months[m] = { month: m, receitas: 0, gastos: 0 };
+      months[m].receitas += Number(o.total);
+    });
+    records?.forEach(r => {
+      const m = new Date(r.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+      if (!months[m]) months[m] = { month: m, receitas: 0, gastos: 0 };
+      if (r.type === 'venda' || r.type === 'entrada') months[m].receitas += Number(r.amount);
+      else months[m].gastos += Number(r.amount);
     });
     expenses?.forEach(e => {
       const m = new Date(e.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-      if (!months[m]) months[m] = { month: m, receita: 0, gastos: 0 };
+      if (!months[m]) months[m] = { month: m, receitas: 0, gastos: 0 };
       months[m].gastos += Number(e.amount);
     });
     return Object.values(months).slice(-12);
+  })();
+
+  const categoryData = (() => {
+    const cats: Record<string, number> = {};
+    records?.forEach(r => { if (r.type === 'compra' || r.type === 'saida') cats[r.category || 'geral'] = (cats[r.category || 'geral'] || 0) + Number(r.amount); });
+    expenses?.forEach(e => { cats[e.category || 'ingrediente'] = (cats[e.category || 'ingrediente'] || 0) + Number(e.amount); });
+    return Object.entries(cats).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   })();
 
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <h1 className="font-display text-3xl font-bold">Financeiro</h1>
-        <Button onClick={exportToExcel} variant="outline">
-          <FileSpreadsheet className="h-4 w-4 mr-2" /> Exportar Excel
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={exportToExcel} variant="outline" size="sm">
+            <FileSpreadsheet className="h-4 w-4 mr-2" /> Exportar
+          </Button>
+          <Dialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" /> Gasto Rápido</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader><DialogTitle className="font-display">Novo Gasto</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Descrição</Label><Input value={expenseForm.description} onChange={e => setExpenseForm(f => ({ ...f, description: e.target.value }))} placeholder="Ex: Farinha de trigo" /></div>
+                <div><Label>Valor (R$)</Label><Input type="number" step="0.01" value={expenseForm.amount} onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value }))} /></div>
+                <div>
+                  <Label>Categoria</Label>
+                  <Select value={expenseForm.category} onValueChange={v => setExpenseForm(f => ({ ...f, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Data</Label><Input type="date" value={expenseForm.date} onChange={e => setExpenseForm(f => ({ ...f, date: e.target.value }))} /></div>
+                <Button className="w-full" onClick={addExpense}>Adicionar Gasto</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Registro Manual</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle className="font-display">Novo Registro</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label>Tipo</Label>
+                  <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as RecordType }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="compra">🛒 Compra</SelectItem>
+                      <SelectItem value="venda">💰 Venda</SelectItem>
+                      <SelectItem value="entrada">📥 Entrada</SelectItem>
+                      <SelectItem value="saida">📤 Saída</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Descrição</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Ex: 5kg de farinha" /></div>
+                <div><Label>Valor (R$)</Label><Input type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
+                <div>
+                  <Label>Categoria</Label>
+                  <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                {form.type === 'compra' && <div><Label>Fornecedor</Label><Input value={form.supplier} onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))} /></div>}
+                {form.type === 'venda' && <div><Label>Cliente</Label><Input value={form.customer_name} onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))} /></div>}
+                <div><Label>Data</Label><Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+                <div><Label>Observações</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} placeholder="Opcional" /></div>
+                <Button className="w-full" onClick={addRecord}>Salvar Registro</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      {/* Period filter */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {PERIODS.map(p => (
+          <Button key={p.days} variant={period === p.days ? 'default' : 'outline'} size="sm" onClick={() => setPeriod(p.days)}>
+            {p.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm">Receita Total</CardTitle>
-            <TrendingUp className="h-5 w-5 text-green-600" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 p-4">
+            <CardTitle className="text-xs">Receita Total</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">R$ {totalRevenue.toFixed(2)}</div></CardContent>
+          <CardContent className="p-4 pt-0"><div className="text-lg font-bold text-green-600">R$ {totalReceitas.toFixed(2)}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm">Gastos Totais</CardTitle>
-            <TrendingDown className="h-5 w-5 text-destructive" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 p-4">
+            <CardTitle className="text-xs">Gastos Totais</CardTitle>
+            <TrendingDown className="h-4 w-4 text-destructive" />
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-destructive">R$ {totalExpenses.toFixed(2)}</div></CardContent>
+          <CardContent className="p-4 pt-0"><div className="text-lg font-bold text-destructive">R$ {totalGastos.toFixed(2)}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm">Lucro Líquido</CardTitle>
-            <DollarSign className={`h-5 w-5 ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`} />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 p-4">
+            <CardTitle className="text-xs">Lucro</CardTitle>
+            <DollarSign className={`h-4 w-4 ${lucro >= 0 ? 'text-green-600' : 'text-destructive'}`} />
           </CardHeader>
-          <CardContent><div className={`text-2xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>R$ {profit.toFixed(2)}</div></CardContent>
+          <CardContent className="p-4 pt-0"><div className={`text-lg font-bold ${lucro >= 0 ? 'text-green-600' : 'text-destructive'}`}>R$ {lucro.toFixed(2)}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 p-4">
+            <CardTitle className="text-xs">Pedidos</CardTitle>
+            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="p-4 pt-0"><div className="text-lg font-bold">{orders?.length ?? 0}</div></CardContent>
         </Card>
       </div>
 
-      {chartData.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      {/* Charts */}
+      {monthlyData.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           <Card>
-            <CardHeader><CardTitle className="text-lg">Receita vs Gastos</CardTitle></CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={chartData}>
+            <CardHeader className="p-4 pb-2"><CardTitle className="text-sm">Receitas vs Gastos</CardTitle></CardHeader>
+            <CardContent className="p-4 pt-0">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="receita" fill="hsl(140, 50%, 40%)" name="Receita" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="receitas" fill="hsl(140, 50%, 40%)" name="Receitas" />
                   <Bar dataKey="gastos" fill="hsl(0, 84%, 60%)" name="Gastos" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Evolução</CardTitle></CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="receita" stroke="hsl(140, 50%, 40%)" name="Receita" />
-                  <Line type="monotone" dataKey="gastos" stroke="hsl(0, 84%, 60%)" name="Gastos" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {categoryData.length > 0 && (
+            <Card>
+              <CardHeader className="p-4 pb-2"><CardTitle className="text-sm">Gastos por Categoria</CardTitle></CardHeader>
+              <CardContent className="p-4 pt-0">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name }) => name} fontSize={11}>
+                      {categoryData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-xl font-bold">Gastos</h2>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary"><Plus className="h-4 w-4 mr-2" /> Novo Gasto</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle className="font-display">Registrar Gasto</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div><Label>Descrição</Label><Input value={expenseForm.description} onChange={e => setExpenseForm(f => ({ ...f, description: e.target.value }))} placeholder="Ex: Farinha de trigo" /></div>
-              <div><Label>Valor (R$)</Label><Input type="number" step="0.01" value={expenseForm.amount} onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value }))} /></div>
-              <div><Label>Data</Label><Input type="date" value={expenseForm.date} onChange={e => setExpenseForm(f => ({ ...f, date: e.target.value }))} /></div>
-              <Button className="w-full bg-primary" onClick={addExpense}>Adicionar Gasto</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      {/* Records list */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h2 className="font-display text-xl font-bold">Registros</h2>
+        <div className="flex gap-2 items-center">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="compra">Compras</SelectItem>
+              <SelectItem value="venda">Vendas</SelectItem>
+              <SelectItem value="entrada">Entradas</SelectItem>
+              <SelectItem value="saida">Saídas/Gastos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="space-y-2">
-        {expenses?.map(expense => (
-          <Card key={expense.id} className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium">{expense.description}</p>
-              <p className="text-sm text-muted-foreground">{new Date(expense.date).toLocaleDateString('pt-BR')}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="font-bold text-destructive">- R$ {Number(expense.amount).toFixed(2)}</span>
-              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteExpense(expense.id)}><Trash2 className="h-4 w-4" /></Button>
-            </div>
-          </Card>
-        ))}
-        {expenses?.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhum gasto registrado.</p>}
+        {filtered?.map(record => {
+          const t = record.type as RecordType;
+          const isPositive = t === 'venda' || t === 'entrada';
+          const source = (record as any).source;
+          return (
+            <Card key={record.id} className="flex items-center justify-between p-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full bg-muted ${typeColors[t] || 'text-destructive'}`}>
+                    {source === 'expense' ? 'Gasto' : (typeLabels[t] || t)}
+                  </span>
+                  <p className="font-medium truncate">{record.description}</p>
+                </div>
+                <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                  <span>{new Date(record.date).toLocaleDateString('pt-BR')}</span>
+                  {record.category && record.category !== 'geral' && <span>• {record.category}</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 ml-3">
+                <span className={`font-bold whitespace-nowrap ${isPositive ? 'text-green-600' : 'text-destructive'}`}>
+                  {isPositive ? '+' : '-'} R$ {Number(record.amount).toFixed(2)}
+                </span>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRecord(record.id, source)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </Card>
+          );
+        })}
+        {filtered?.length === 0 && <p className="text-muted-foreground text-center py-8 text-sm">Nenhum registro encontrado.</p>}
       </div>
     </AdminLayout>
   );

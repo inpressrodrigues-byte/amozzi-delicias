@@ -16,6 +16,7 @@ import Settings from "./pages/admin/Settings";
 import Coupons from "./pages/admin/Coupons";
 import RemoteOrders from "./pages/admin/RemoteOrders";
 import InternalControl from "./pages/admin/InternalControl";
+import Recipes from "./pages/admin/Recipes";
 import Customers from "./pages/admin/Customers";
 import Profiles from "./pages/admin/Profiles";
 import Ideas from "./pages/admin/Ideas";
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/admin/coupons" element={<Coupons />} />
               <Route path="/admin/remote-orders" element={<RemoteOrders />} />
               <Route path="/admin/internal" element={<InternalControl />} />
+              <Route path="/admin/recipes" element={<Recipes />} />
               <Route path="/admin/customers" element={<Customers />} />
               <Route path="/admin/profiles" element={<Profiles />} />
               <Route path="/admin/calculator" element={<CostCalculator />} />

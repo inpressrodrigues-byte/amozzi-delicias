@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -126,6 +127,9 @@ const RemoteOrders = () => {
   const [submitting, setSubmitting] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [pixQrFile, setPixQrFile] = useState<File | null>(null);
+  // Standalone billing state
+  const [avulsoOpen, setAvulsoOpen] = useState(false);
+  const [avulsoForm, setAvulsoForm] = useState({ name: '', sector: '', whatsapp: '', billing_date: new Date().toISOString().split('T')[0], notes: '' });
   // Filter state
   const [filterName, setFilterName] = useState('');
   const [filterPayment, setFilterPayment] = useState<string>('all');
@@ -961,6 +965,44 @@ const RemoteOrders = () => {
         {/* ===== BILLING TAB ===== */}
         <TabsContent value="billing">
           <div className="space-y-6">
+            {/* Add standalone billing */}
+            <div className="flex justify-end">
+              <Dialog open={avulsoOpen} onOpenChange={setAvulsoOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Cobrança Avulsa</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader><DialogTitle>Cobrança Avulsa</DialogTitle></DialogHeader>
+                  <div className="space-y-3">
+                    <div><Label className="text-xs">Nome *</Label><Input value={avulsoForm.name} onChange={e => setAvulsoForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome da pessoa" className="h-9" /></div>
+                    <div><Label className="text-xs">Setor</Label><Input value={avulsoForm.sector} onChange={e => setAvulsoForm(f => ({ ...f, sector: e.target.value }))} placeholder="Setor" className="h-9" /></div>
+                    <div><Label className="text-xs">WhatsApp</Label><Input value={avulsoForm.whatsapp} onChange={e => setAvulsoForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="(00) 00000-0000" className="h-9" /></div>
+                    <div><Label className="text-xs">Data de Cobrança</Label><Input type="date" value={avulsoForm.billing_date} onChange={e => setAvulsoForm(f => ({ ...f, billing_date: e.target.value }))} className="h-9" /></div>
+                    <div><Label className="text-xs">Observações</Label><Input value={avulsoForm.notes} onChange={e => setAvulsoForm(f => ({ ...f, notes: e.target.value }))} placeholder="O que a pessoa deve?" className="h-9" /></div>
+                    <Button className="w-full" onClick={async () => {
+                      if (!avulsoForm.name.trim()) { toast.error('Preencha o nome'); return; }
+                      const { error } = await supabase.from('remote_orders').insert({
+                        customer_name: avulsoForm.name.trim(),
+                        sector: avulsoForm.sector.trim(),
+                        customer_whatsapp: avulsoForm.whatsapp.trim(),
+                        billing_date: avulsoForm.billing_date,
+                        notes: avulsoForm.notes.trim(),
+                        items: [],
+                        payment_status: 'nao_pago',
+                        paid: false,
+                        delivered: true,
+                        billing_status: 'pendente',
+                      });
+                      if (error) { toast.error('Erro ao criar cobrança'); return; }
+                      toast.success('Cobrança avulsa adicionada!');
+                      setAvulsoOpen(false);
+                      setAvulsoForm({ name: '', sector: '', whatsapp: '', billing_date: new Date().toISOString().split('T')[0], notes: '' });
+                      queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+                    }}>Adicionar Cobrança</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-card border border-border rounded-xl p-4">
