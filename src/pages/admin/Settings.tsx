@@ -95,6 +95,8 @@ const Settings = () => {
       if (Array.isArray(cats) && cats.length > 0) setProductCategories(cats);
       const sh = (settings as any).store_hours;
       if (sh) setStoreHours(prev => ({ ...prev, ...sh }));
+      const hm = (settings as any).hidden_admin_menus;
+      if (Array.isArray(hm)) setHiddenMenus(hm);
     }
   }, [settings]);
 
