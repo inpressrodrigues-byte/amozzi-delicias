@@ -13,7 +13,7 @@ const Index = () => {
   const [cartOpen, setCartOpen] = useState(false);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <StoreStatusBanner />
       <Header onCartClick={() => setCartOpen(true)} />
       <HeroSection />

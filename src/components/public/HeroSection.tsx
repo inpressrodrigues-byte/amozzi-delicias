@@ -33,10 +33,10 @@ const HeroSection = () => {
             className="h-20 sm:h-28 md:h-36 w-auto mx-auto mb-4 sm:mb-8 drop-shadow-2xl"
           />
         )}
-        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
+        <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 sm:mb-6 drop-shadow-lg">
           {settings?.hero_title || 'AMOZI Delícias no Pote'}
         </h1>
-        <p className="text-lg md:text-xl text-white/80 mb-10 font-light max-w-2xl mx-auto leading-relaxed">
+        <p className="text-base sm:text-lg md:text-xl text-white/80 mb-6 sm:mb-10 font-light max-w-2xl mx-auto leading-relaxed">
           {settings?.hero_subtitle || 'Bolos no pote artesanais feitos com amor e ingredientes selecionados'}
         </p>
         <Button

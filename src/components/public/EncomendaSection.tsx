@@ -76,7 +76,7 @@ const EncomendaSection = () => {
           className="text-center mb-12"
         >
           <span className="text-accent font-semibold text-sm uppercase tracking-[0.3em]">Sob Medida</span>
-          <h2 className="font-display text-4xl md:text-5xl font-bold mt-2 text-foreground">
+          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-2 text-foreground">
             Encomendas
           </h2>
           <p className="text-muted-foreground mt-3 text-lg max-w-xl mx-auto">
