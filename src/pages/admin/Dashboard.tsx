@@ -120,7 +120,16 @@ const Dashboard = () => {
 
   const orders = useMemo(() => filterByDate(allOrders ?? []), [allOrders, periodStart]);
   const remoteOrders = useMemo(() => filterByDate(allRemoteOrders ?? []), [allRemoteOrders, periodStart]);
-  const expenses = useMemo(() => filterExpensesByDate(allExpenses ?? []), [allExpenses, periodStart]);
+  const expensesRaw = useMemo(() => filterExpensesByDate(allExpenses ?? []), [allExpenses, periodStart]);
+  const manualRecords = useMemo(() => {
+    const recs = (allManualRecords ?? []).filter(r => r.type === 'compra' || r.type === 'saida');
+    if (!periodStart) return recs;
+    return recs.filter(r => isAfter(parseISO(r.date), periodStart));
+  }, [allManualRecords, periodStart]);
+  const expenses = useMemo(() => [
+    ...expensesRaw.map(e => ({ date: e.date, amount: e.amount, description: e.description, category: e.category })),
+    ...manualRecords.map(r => ({ date: r.date, amount: r.amount, description: r.description, category: r.category })),
+  ], [expensesRaw, manualRecords]);
 
   // Calculate remote order totals
   const remoteWithTotals = useMemo(() => {
