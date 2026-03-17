@@ -23,6 +23,9 @@ export const allNavItems = [
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
+  const { data: siteSettings } = useSiteSettings();
+  const hiddenMenus: string[] = (siteSettings as any)?.hidden_admin_menus || [];
+  const navItems = allNavItems.filter(item => !hiddenMenus.includes(item.path));
   const { user, isAdmin, loading, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
