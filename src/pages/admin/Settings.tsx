@@ -58,6 +58,7 @@ const Settings = () => {
     weekend_close: '22:00',
     closed_message: 'Estamos fechados no momento. Os pedidos serão separados no próximo horário de funcionamento.',
   });
+  const [hiddenMenus, setHiddenMenus] = useState<string[]>([]);
 
   const { data: billingSettings } = useQuery({
     queryKey: ['billing-settings'],
