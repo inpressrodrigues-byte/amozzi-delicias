@@ -192,6 +192,22 @@ const TrackOrder = () => {
                   Pedido <span className="font-mono text-primary">{order.tracking_code}</span>
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">{order.customer_name} — {new Date(order.created_at).toLocaleDateString('pt-BR')}</p>
+                {!notificationsEnabled && order.status !== 'delivered' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 rounded-full text-xs gap-1.5"
+                    onClick={requestNotifications}
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                    Ativar notificações em tempo real
+                  </Button>
+                )}
+                {notificationsEnabled && order.status !== 'delivered' && (
+                  <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                    <Bell className="h-3 w-3" /> Notificações ativas — você será avisado em tempo real
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 {/* Status tracker with green checks */}
