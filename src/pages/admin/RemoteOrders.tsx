@@ -91,6 +91,7 @@ interface SelectedItem {
 
 const PAYMENT_OPTIONS = [
   { value: 'nao_pago', label: 'Não pago', variant: 'destructive' as const },
+  { value: 'vai_pagar_em', label: 'Vai pagar em', variant: 'outline' as const },
   { value: 'pago_pix', label: 'Pago PIX', variant: 'default' as const },
   { value: 'pago_dinheiro', label: 'Pago Dinheiro', variant: 'default' as const },
 ];
