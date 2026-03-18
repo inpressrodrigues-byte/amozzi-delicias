@@ -48,6 +48,26 @@ const PaymentCalendar = () => {
     allDays.push(d);
   }
 
+  // Fetch products for price lookup
+  const { data: products } = useQuery({
+    queryKey: ['products-for-calendar'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('products').select('id, price');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const priceMap = useMemo(() => new Map((products ?? []).map(p => [p.id, Number(p.price)])), [products]);
+
+  const calcOrderTotal = (order: any) => {
+    const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+    return items.reduce((s: number, i: any) => {
+      const price = Number(i.price) || priceMap.get(i.product_id) || 0;
+      return s + price * (Number(i.quantity) || 1);
+    }, 0);
+  };
+
   const ordersByDate = useMemo(() => {
     const map: Record<string, typeof orders> = {};
     orders?.forEach(o => {
@@ -57,6 +77,15 @@ const PaymentCalendar = () => {
     });
     return map;
   }, [orders]);
+
+  const totalsByDate = useMemo(() => {
+    const map: Record<string, number> = {};
+    orders?.forEach(o => {
+      const key = (o as any).payment_due_date;
+      map[key] = (map[key] || 0) + calcOrderTotal(o);
+    });
+    return map;
+  }, [orders, priceMap]);
 
   const selectedOrders = selectedDate
     ? ordersByDate[format(selectedDate, 'yyyy-MM-dd')] || []
@@ -128,20 +157,29 @@ const PaymentCalendar = () => {
               const today = isToday(day);
               const isPast = day < new Date() && !isToday(day);
 
+              const dayTotal = totalsByDate[dateKey] || 0;
+
               return (
                 <button
                   key={i}
                   onClick={() => setSelectedDate(day)}
-                  className={`relative flex flex-col items-center justify-center h-10 sm:h-12 rounded-lg text-[12px] transition-all ${
+                  className={`relative flex flex-col items-center justify-center h-12 sm:h-14 rounded-lg text-[12px] transition-all ${
                     !inMonth ? 'text-muted-foreground/30' :
                     selected ? 'bg-foreground text-background' :
                     today ? 'bg-primary/10 text-primary font-bold' :
                     'hover:bg-muted'
                   }`}
                 >
+                  {count > 0 && (
+                    <span className={`text-[8px] font-bold ${
+                      selected ? 'text-emerald-300' : 'text-emerald-600'
+                    }`}>
+                      R${dayTotal.toFixed(0)}
+                    </span>
+                  )}
                   <span>{day.getDate()}</span>
                   {count > 0 && (
-                    <span className={`absolute bottom-0.5 text-[8px] font-bold px-1 rounded-full ${
+                    <span className={`text-[8px] font-bold px-1 rounded-full ${
                       selected ? 'bg-background text-foreground' :
                       isPast ? 'bg-destructive/20 text-destructive' :
                       'bg-primary/20 text-primary'

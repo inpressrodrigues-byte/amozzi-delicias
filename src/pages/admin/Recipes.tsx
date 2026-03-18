@@ -44,6 +44,7 @@ const Recipes = () => {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [aiText, setAiText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [batchYield, setBatchYield] = useState(1);
   const [newIngredient, setNewIngredient] = useState<Ingredient>({
     ingredient_name: '', quantity_used: 0, quantity_unit: 'g',
     package_price: 0, package_quantity: 1, package_unit: 'kg',
@@ -138,23 +139,9 @@ const Recipes = () => {
 
   const saveRecipeCost = async () => {
     if (!selectedProduct || !ingredients?.length) return;
-    const convert = (qty: number, unit: string, pkgQty: number, pkgUnit: string): number => {
-      let usedInBase = qty;
-      let pkgInBase = pkgQty;
-      if (unit === 'g' && pkgUnit === 'kg') { pkgInBase = pkgQty * 1000; }
-      else if (unit === 'ml' && pkgUnit === 'L') { pkgInBase = pkgQty * 1000; }
-      else if (unit === 'un' && pkgUnit === 'dz') { pkgInBase = pkgQty * 12; }
-      return usedInBase / pkgInBase;
-    };
-
-    let totalCost = 0;
-    ingredients.forEach(ing => {
-      const fraction = convert(Number(ing.quantity_used), ing.quantity_unit, Number(ing.package_quantity), ing.package_unit);
-      totalCost += fraction * Number(ing.package_price);
-    });
-
-    await supabase.from('products').update({ cost: totalCost }).eq('id', selectedProduct.id);
-    toast.success(`Custo atualizado: R$ ${totalCost.toFixed(2)}`);
+    const costPerUnit = totalRecipeCost / (batchYield || 1);
+    await supabase.from('products').update({ cost: costPerUnit }).eq('id', selectedProduct.id);
+    toast.success(`Custo por unidade atualizado: R$ ${costPerUnit.toFixed(2)}`);
     queryClient.invalidateQueries({ queryKey: ['all-products-recipes'] });
   };
 
@@ -169,6 +156,8 @@ const Recipes = () => {
   };
 
   const totalRecipeCost = ingredients?.reduce((s, i) => s + calcCost(i), 0) ?? 0;
+  const costPerUnit = totalRecipeCost / (batchYield || 1);
+  const profitMargin = selectedProduct?.price > 0 ? ((Number(selectedProduct.price) - costPerUnit) / Number(selectedProduct.price)) * 100 : 0;
 
   if (selectedProduct) {
     return (
@@ -183,14 +172,34 @@ const Recipes = () => {
               <p className="text-sm text-muted-foreground">Receita · {ingredients?.length || 0} ingredientes</p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Custo da receita</p>
-                <p className="text-xl font-bold">R$ {totalRecipeCost.toFixed(2)}</p>
-              </div>
               <Button onClick={saveRecipeCost} disabled={!ingredients?.length}>
                 <Save className="h-4 w-4 mr-1" /> Salvar Custo
               </Button>
             </div>
+          </div>
+
+          {/* Yield + Cost Summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+            <Card className="p-3">
+              <Label className="text-[11px] text-muted-foreground">Rende quantas unidades?</Label>
+              <Input className="h-8 text-sm font-bold mt-1" type="number" min={1} value={batchYield}
+                onChange={e => setBatchYield(Math.max(1, parseInt(e.target.value) || 1))} />
+            </Card>
+            <Card className="p-3">
+              <p className="text-[11px] text-muted-foreground">Custo total (fornada)</p>
+              <p className="text-lg font-bold mt-1">R$ {totalRecipeCost.toFixed(2)}</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-[11px] text-muted-foreground">Custo por unidade</p>
+              <p className="text-lg font-bold mt-1">R$ {costPerUnit.toFixed(2)}</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-[11px] text-muted-foreground">Margem de lucro</p>
+              <p className={`text-lg font-bold mt-1 ${profitMargin >= 50 ? 'text-emerald-600' : profitMargin >= 20 ? 'text-amber-600' : 'text-destructive'}`}>
+                {profitMargin.toFixed(1)}%
+              </p>
+              <p className="text-[10px] text-muted-foreground">Venda: R$ {Number(selectedProduct.price).toFixed(2)}</p>
+            </Card>
           </div>
         </div>
 
