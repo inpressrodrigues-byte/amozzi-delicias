@@ -71,8 +71,10 @@ const Coupons = () => {
 
   const deleteCoupon = async (id: string) => {
     if (!confirm('Excluir este cupom?')) return;
+    const coupon = coupons?.find((c: any) => c.id === id);
     await supabase.from('coupons' as any).delete().eq('id', id);
     queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+    logAdminAction('CUPOM_EXCLUÍDO', `Excluiu cupom "${coupon?.code || id}"`, 'coupons', id);
     toast.success('Cupom excluído');
   };
 
