@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Trash2, Tag, Percent, DollarSign } from 'lucide-react';
+import { logAdminAction } from '@/hooks/useAdminLog';
 
 const Coupons = () => {
   const queryClient = useQueryClient();
