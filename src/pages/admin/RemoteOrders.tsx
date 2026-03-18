@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { logAdminAction } from '@/hooks/useAdminLog';
 
 // ── Notification Sound ──
 const playNotificationSound = () => {

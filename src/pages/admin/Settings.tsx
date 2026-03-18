@@ -147,6 +147,7 @@ const Settings = () => {
 
       queryClient.invalidateQueries({ queryKey: ['site-settings'] });
       queryClient.invalidateQueries({ queryKey: ['billing-settings'] });
+      logAdminAction('CONFIG_SALVA', 'Atualizou configurações do site', 'site_settings');
       toast.success('Configurações salvas!');
     } catch (err) {
       toast.error('Erro ao salvar');
