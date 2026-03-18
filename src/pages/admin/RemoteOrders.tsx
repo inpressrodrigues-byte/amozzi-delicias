@@ -778,20 +778,26 @@ const RemoteOrders = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-[11px]">Observações</Label>
                 <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Alguma observação..." className="h-9" />
               </div>
               <div>
                 <Label className="text-[11px]">Pagamento</Label>
-                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                <Select value={paymentStatus} onValueChange={v => { setPaymentStatus(v); if (v !== 'vai_pagar_em') setPaymentDueDate(''); }}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+              {paymentStatus === 'vai_pagar_em' && (
+                <div>
+                  <Label className="text-[11px]">Data do pagamento</Label>
+                  <Input type="date" value={paymentDueDate} onChange={e => setPaymentDueDate(e.target.value)} className="h-9" />
+                </div>
+              )}
             </div>
 
             {/* PIX QR Code display */}
