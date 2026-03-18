@@ -48,6 +48,26 @@ const PaymentCalendar = () => {
     allDays.push(d);
   }
 
+  // Fetch products for price lookup
+  const { data: products } = useQuery({
+    queryKey: ['products-for-calendar'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('products').select('id, price');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const priceMap = useMemo(() => new Map((products ?? []).map(p => [p.id, Number(p.price)])), [products]);
+
+  const calcOrderTotal = (order: any) => {
+    const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+    return items.reduce((s: number, i: any) => {
+      const price = Number(i.price) || priceMap.get(i.product_id) || 0;
+      return s + price * (Number(i.quantity) || 1);
+    }, 0);
+  };
+
   const ordersByDate = useMemo(() => {
     const map: Record<string, typeof orders> = {};
     orders?.forEach(o => {
@@ -57,6 +77,15 @@ const PaymentCalendar = () => {
     });
     return map;
   }, [orders]);
+
+  const totalsByDate = useMemo(() => {
+    const map: Record<string, number> = {};
+    orders?.forEach(o => {
+      const key = (o as any).payment_due_date;
+      map[key] = (map[key] || 0) + calcOrderTotal(o);
+    });
+    return map;
+  }, [orders, priceMap]);
 
   const selectedOrders = selectedDate
     ? ordersByDate[format(selectedDate, 'yyyy-MM-dd')] || []
