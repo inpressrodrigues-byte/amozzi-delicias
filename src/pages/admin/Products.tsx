@@ -123,8 +123,10 @@ const Products = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir este produto?')) return;
+    const product = products?.find(p => p.id === id);
     await supabase.from('products').delete().eq('id', id);
     queryClient.invalidateQueries({ queryKey: ['products'] });
+    logAdminAction('PRODUTO_EXCLUÍDO', `Excluiu "${product?.name || id}"`, 'products', id);
     toast.success('Produto excluído');
   };
 
