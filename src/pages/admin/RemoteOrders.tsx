@@ -91,6 +91,7 @@ interface SelectedItem {
 
 const PAYMENT_OPTIONS = [
   { value: 'nao_pago', label: 'Não pago', variant: 'destructive' as const },
+  { value: 'vai_pagar_em', label: 'Vai pagar em', variant: 'outline' as const },
   { value: 'pago_pix', label: 'Pago PIX', variant: 'default' as const },
   { value: 'pago_dinheiro', label: 'Pago Dinheiro', variant: 'default' as const },
 ];
@@ -124,6 +125,7 @@ const RemoteOrders = () => {
   const [paymentStatus, setPaymentStatus] = useState('nao_pago');
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [notes, setNotes] = useState('');
+  const [paymentDueDate, setPaymentDueDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [pixQrFile, setPixQrFile] = useState<File | null>(null);
@@ -259,15 +261,16 @@ const RemoteOrders = () => {
     if (selectedItems.length === 0) { toast.error('Selecione ao menos um sabor'); return; }
     setSubmitting(true);
 
-    const payload = {
+    const payload: any = {
       customer_name: name.trim(),
       sector: sector.trim(),
       customer_whatsapp: whatsapp.trim(),
       items: selectedItems as any,
       payment_status: paymentStatus,
-      paid: paymentStatus !== 'nao_pago',
-      billing_status: paymentStatus !== 'nao_pago' ? 'pago' : 'pendente',
+      paid: paymentStatus !== 'nao_pago' && paymentStatus !== 'vai_pagar_em',
+      billing_status: (paymentStatus !== 'nao_pago' && paymentStatus !== 'vai_pagar_em') ? 'pago' : 'pendente',
       notes: notes.trim(),
+      payment_due_date: paymentStatus === 'vai_pagar_em' && paymentDueDate ? paymentDueDate : null,
     };
 
     if (editingOrder) {
@@ -328,7 +331,7 @@ const RemoteOrders = () => {
       }
     }
 
-    setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setEditingOrder(null);
+    setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setPaymentDueDate(''); setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
     queryClient.invalidateQueries({ queryKey: ['customers'] });
     queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -341,6 +344,7 @@ const RemoteOrders = () => {
     setWhatsapp(order.customer_whatsapp || '');
     setPaymentStatus(order.payment_status || 'nao_pago');
     setNotes(order.notes || '');
+    setPaymentDueDate(order.payment_due_date || '');
     const items = Array.isArray(order.items) ? (order.items as any[]) : [];
     setSelectedItems(items.map((i: any) => ({
       product_id: i.product_id,
@@ -351,15 +355,27 @@ const RemoteOrders = () => {
   };
 
   const updatePaymentStatus = async (id: string, status: string) => {
-    const updateData: any = { payment_status: status, paid: status !== 'nao_pago' };
-    if (status !== 'nao_pago') {
+    const updateData: any = { payment_status: status, paid: status !== 'nao_pago' && status !== 'vai_pagar_em' };
+    if (status !== 'nao_pago' && status !== 'vai_pagar_em') {
       updateData.billing_status = 'pago';
+    }
+    if (status !== 'vai_pagar_em') {
+      updateData.payment_due_date = null;
     }
     const { error } = await supabase.from('remote_orders').update(updateData).eq('id', id);
     if (error) { toast.error('Erro ao atualizar'); return; }
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
     queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
     queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['remote-orders-calendar'] });
+  };
+
+  const updatePaymentDueDate = async (id: string, date: string) => {
+    const { error } = await supabase.from('remote_orders').update({ payment_due_date: date || null }).eq('id', id);
+    if (error) { toast.error('Erro ao atualizar data'); return; }
+    toast.success('Data de pagamento atualizada');
+    queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['remote-orders-calendar'] });
   };
 
   const updateBillingStatus = async (id: string, status: string) => {
@@ -459,8 +475,12 @@ const RemoteOrders = () => {
 
   const categories = [...new Set(products?.map(p => p.category) || [])];
 
-  const getPaymentBadge = (status: string) => {
+  const getPaymentBadge = (status: string, order?: any) => {
     const opt = PAYMENT_OPTIONS.find(o => o.value === status) || PAYMENT_OPTIONS[0];
+    if (status === 'vai_pagar_em' && order?.payment_due_date) {
+      const d = new Date(order.payment_due_date + 'T12:00:00');
+      return <Badge variant="outline" className="text-[11px] font-medium">Vai pagar em {format(d, 'dd/MM')}</Badge>;
+    }
     return <Badge variant={opt.variant} className="text-[11px] font-medium">{opt.label}</Badge>;
   };
 
@@ -492,7 +512,7 @@ const RemoteOrders = () => {
             </p>
           </div>
         <div className="flex items-center gap-2 shrink-0">
-            {getPaymentBadge(order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'))}
+            {getPaymentBadge(order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'), order)}
             {!showBillingControls && (
               <button onClick={() => { startEditOrder(order); /* switch to new tab handled by caller */ }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <Pencil className="h-3.5 w-3.5" />
@@ -526,6 +546,14 @@ const RemoteOrders = () => {
                 {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            {(order.payment_status === 'vai_pagar_em') && (
+              <Input
+                type="date"
+                className="h-8 w-36 text-[11px]"
+                value={(order as any).payment_due_date || ''}
+                onChange={e => updatePaymentDueDate(order.id, e.target.value)}
+              />
+            )}
             <label className="flex items-center gap-1.5 text-[12px] cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
               <Checkbox checked={order.separated} onCheckedChange={v => toggleSeparated(order.id, v === true)} className="h-3.5 w-3.5" />
               Separado
@@ -755,20 +783,26 @@ const RemoteOrders = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-[11px]">Observações</Label>
                 <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Alguma observação..." className="h-9" />
               </div>
               <div>
                 <Label className="text-[11px]">Pagamento</Label>
-                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                <Select value={paymentStatus} onValueChange={v => { setPaymentStatus(v); if (v !== 'vai_pagar_em') setPaymentDueDate(''); }}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+              {paymentStatus === 'vai_pagar_em' && (
+                <div>
+                  <Label className="text-[11px]">Data do pagamento</Label>
+                  <Input type="date" value={paymentDueDate} onChange={e => setPaymentDueDate(e.target.value)} className="h-9" />
+                </div>
+              )}
             </div>
 
             {/* PIX QR Code display */}
@@ -862,7 +896,7 @@ const RemoteOrders = () => {
               </Button>
               {editingOrder && (
                 <Button variant="outline" onClick={() => {
-                  setEditingOrder(null); setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes('');
+                  setEditingOrder(null); setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setPaymentDueDate('');
                 }}>
                   Cancelar Edição
                 </Button>
