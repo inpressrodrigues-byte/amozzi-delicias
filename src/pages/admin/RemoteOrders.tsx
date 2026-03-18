@@ -885,7 +885,7 @@ const RemoteOrders = () => {
               </Button>
               {editingOrder && (
                 <Button variant="outline" onClick={() => {
-                  setEditingOrder(null); setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes('');
+                  setEditingOrder(null); setName(''); setSector(''); setWhatsapp(''); setPaymentStatus('nao_pago'); setSelectedItems([]); setNotes(''); setPaymentDueDate('');
                 }}>
                   Cancelar Edição
                 </Button>
