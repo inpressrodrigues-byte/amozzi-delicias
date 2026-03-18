@@ -475,8 +475,12 @@ const RemoteOrders = () => {
 
   const categories = [...new Set(products?.map(p => p.category) || [])];
 
-  const getPaymentBadge = (status: string) => {
+  const getPaymentBadge = (status: string, order?: any) => {
     const opt = PAYMENT_OPTIONS.find(o => o.value === status) || PAYMENT_OPTIONS[0];
+    if (status === 'vai_pagar_em' && order?.payment_due_date) {
+      const d = new Date(order.payment_due_date + 'T12:00:00');
+      return <Badge variant="outline" className="text-[11px] font-medium">Vai pagar em {format(d, 'dd/MM')}</Badge>;
+    }
     return <Badge variant={opt.variant} className="text-[11px] font-medium">{opt.label}</Badge>;
   };
 
