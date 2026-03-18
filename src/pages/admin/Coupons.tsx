@@ -57,6 +57,7 @@ const Coupons = () => {
       else toast.error('Erro ao criar cupom');
       return;
     }
+    logAdminAction('CUPOM_CRIADO', `Criou cupom "${form.code.toUpperCase()}" — ${form.discount_value}${form.discount_type === 'percentage' ? '%' : ' R$'}`, 'coupons');
     toast.success('Cupom criado!');
     queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
     setDialogOpen(false);
