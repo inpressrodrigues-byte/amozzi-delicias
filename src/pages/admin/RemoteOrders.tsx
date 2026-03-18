@@ -279,11 +279,13 @@ const RemoteOrders = () => {
       setSubmitting(false);
       if (error) { toast.error('Erro ao atualizar pedido'); return; }
       toast.success('Pedido atualizado!');
+      logAdminAction('REMOTO_EDITADO', `Editou pedido de "${form.customer_name}"`, 'remote_orders', editingOrder.id);
     } else {
       const { error } = await supabase.from('remote_orders').insert(payload);
       setSubmitting(false);
       if (error) { toast.error('Erro ao criar pedido'); return; }
       toast.success('Pedido remoto criado!');
+      logAdminAction('REMOTO_CRIADO', `Criou pedido para "${form.customer_name}"`, 'remote_orders');
     }
 
     // Deduct stock for each item
