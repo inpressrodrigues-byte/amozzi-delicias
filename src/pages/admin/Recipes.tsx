@@ -172,14 +172,34 @@ const Recipes = () => {
               <p className="text-sm text-muted-foreground">Receita · {ingredients?.length || 0} ingredientes</p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Custo da receita</p>
-                <p className="text-xl font-bold">R$ {totalRecipeCost.toFixed(2)}</p>
-              </div>
               <Button onClick={saveRecipeCost} disabled={!ingredients?.length}>
                 <Save className="h-4 w-4 mr-1" /> Salvar Custo
               </Button>
             </div>
+          </div>
+
+          {/* Yield + Cost Summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+            <Card className="p-3">
+              <Label className="text-[11px] text-muted-foreground">Rende quantas unidades?</Label>
+              <Input className="h-8 text-sm font-bold mt-1" type="number" min={1} value={batchYield}
+                onChange={e => setBatchYield(Math.max(1, parseInt(e.target.value) || 1))} />
+            </Card>
+            <Card className="p-3">
+              <p className="text-[11px] text-muted-foreground">Custo total (fornada)</p>
+              <p className="text-lg font-bold mt-1">R$ {totalRecipeCost.toFixed(2)}</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-[11px] text-muted-foreground">Custo por unidade</p>
+              <p className="text-lg font-bold mt-1">R$ {costPerUnit.toFixed(2)}</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-[11px] text-muted-foreground">Margem de lucro</p>
+              <p className={`text-lg font-bold mt-1 ${profitMargin >= 50 ? 'text-emerald-600' : profitMargin >= 20 ? 'text-amber-600' : 'text-destructive'}`}>
+                {profitMargin.toFixed(1)}%
+              </p>
+              <p className="text-[10px] text-muted-foreground">Venda: R$ {Number(selectedProduct.price).toFixed(2)}</p>
+            </Card>
           </div>
         </div>
 

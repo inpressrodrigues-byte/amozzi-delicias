@@ -157,20 +157,29 @@ const PaymentCalendar = () => {
               const today = isToday(day);
               const isPast = day < new Date() && !isToday(day);
 
+              const dayTotal = totalsByDate[dateKey] || 0;
+
               return (
                 <button
                   key={i}
                   onClick={() => setSelectedDate(day)}
-                  className={`relative flex flex-col items-center justify-center h-10 sm:h-12 rounded-lg text-[12px] transition-all ${
+                  className={`relative flex flex-col items-center justify-center h-12 sm:h-14 rounded-lg text-[12px] transition-all ${
                     !inMonth ? 'text-muted-foreground/30' :
                     selected ? 'bg-foreground text-background' :
                     today ? 'bg-primary/10 text-primary font-bold' :
                     'hover:bg-muted'
                   }`}
                 >
+                  {count > 0 && (
+                    <span className={`text-[8px] font-bold ${
+                      selected ? 'text-emerald-300' : 'text-emerald-600'
+                    }`}>
+                      R${dayTotal.toFixed(0)}
+                    </span>
+                  )}
                   <span>{day.getDate()}</span>
                   {count > 0 && (
-                    <span className={`absolute bottom-0.5 text-[8px] font-bold px-1 rounded-full ${
+                    <span className={`text-[8px] font-bold px-1 rounded-full ${
                       selected ? 'bg-background text-foreground' :
                       isPast ? 'bg-destructive/20 text-destructive' :
                       'bg-primary/20 text-primary'

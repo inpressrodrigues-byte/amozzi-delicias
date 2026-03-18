@@ -271,16 +271,31 @@ const Dashboard = () => {
     return Array.from(map.entries()).map(([name, value]) => ({ name, value: Number(value.toFixed(2)) }));
   }, [expenses]);
 
+  // Unpaid amounts from remote orders
+  const unpaidTotal = useMemo(() => {
+    return (allRemoteOrders ?? [])
+      .filter(o => !o.paid)
+      .reduce((sum, o) => {
+        const items = Array.isArray(o.items) ? (o.items as any[]) : [];
+        const orderTotal = items.reduce((s: number, i: any) => {
+          const price = Number(i.price) || priceMap.get(i.product_id) || 0;
+          return s + price * (Number(i.quantity) || 1);
+        }, 0);
+        return sum + orderTotal;
+      }, 0);
+  }, [allRemoteOrders, priceMap]);
+
   const stats = [
     { label: 'Receita Total', value: `R$ ${totalRevenue.toFixed(2)}`, icon: TrendingUp, gradient: 'from-emerald-500 to-green-400' },
     { label: 'Despesas', value: `R$ ${totalExpenses.toFixed(2)}`, icon: TrendingDown, gradient: 'from-red-500 to-rose-400' },
     { label: 'Pedidos', value: totalOrders, icon: ShoppingCart, gradient: 'from-amber-500 to-yellow-400' },
-    { label: 'Clientes', value: customers.length, icon: Users, gradient: 'from-blue-500 to-cyan-400' },
+    { label: 'A Receber', value: `R$ ${unpaidTotal.toFixed(2)}`, icon: DollarSign, gradient: 'from-orange-500 to-amber-400' },
   ];
 
   const financialDetails = [
     { label: 'Receita Online', value: onlineRevenue },
     { label: 'Receita Remota', value: remoteRevenue },
+    { label: 'Valores a Receber', value: unpaidTotal },
     { label: 'Custo dos Produtos (CMV)', value: cogs },
     { label: 'Lucro Bruto', value: grossProfit },
     { label: 'Despesas Operacionais', value: totalExpenses },
