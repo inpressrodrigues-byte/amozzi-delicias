@@ -72,11 +72,10 @@ const Orders = () => {
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', id);
     if (error) { toast.error('Erro ao atualizar status'); return; }
+    const order = orders?.find(o => o.id === id);
+    logAdminAction('PEDIDO_STATUS', `"${order?.customer_name}" → ${statusLabel(status)}`, 'orders', id);
     toast.success(`Status atualizado: ${statusLabel(status)}`);
     queryClient.invalidateQueries({ queryKey: ['admin-orders-list'] });
-
-    // Send WhatsApp notification
-    const order = orders?.find(o => o.id === id);
     if (order) sendWhatsAppNotification(order, status);
   };
 
