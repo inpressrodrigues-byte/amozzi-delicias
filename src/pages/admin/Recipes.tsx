@@ -156,6 +156,8 @@ const Recipes = () => {
   };
 
   const totalRecipeCost = ingredients?.reduce((s, i) => s + calcCost(i), 0) ?? 0;
+  const costPerUnit = totalRecipeCost / (batchYield || 1);
+  const profitMargin = selectedProduct?.price > 0 ? ((Number(selectedProduct.price) - costPerUnit) / Number(selectedProduct.price)) * 100 : 0;
 
   if (selectedProduct) {
     return (
