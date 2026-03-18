@@ -44,6 +44,7 @@ const Recipes = () => {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [aiText, setAiText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [batchYield, setBatchYield] = useState(1);
   const [newIngredient, setNewIngredient] = useState<Ingredient>({
     ingredient_name: '', quantity_used: 0, quantity_unit: 'g',
     package_price: 0, package_quantity: 1, package_unit: 'kg',
