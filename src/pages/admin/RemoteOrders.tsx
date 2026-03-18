@@ -539,6 +539,14 @@ const RemoteOrders = () => {
                 {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            {(order.payment_status === 'vai_pagar_em') && (
+              <Input
+                type="date"
+                className="h-8 w-36 text-[11px]"
+                value={(order as any).payment_due_date || ''}
+                onChange={e => updatePaymentDueDate(order.id, e.target.value)}
+              />
+            )}
             <label className="flex items-center gap-1.5 text-[12px] cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
               <Checkbox checked={order.separated} onCheckedChange={v => toggleSeparated(order.id, v === true)} className="h-3.5 w-3.5" />
               Separado
