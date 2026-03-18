@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          record_id: string | null
+          table_name: string | null
+          user_email: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          record_id?: string | null
+          table_name?: string | null
+          user_email: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          record_id?: string | null
+          table_name?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       billing_settings: {
         Row: {
           billing_enabled: boolean
@@ -490,6 +520,7 @@ export type Database = {
           items: Json
           notes: string | null
           paid: boolean
+          payment_due_date: string | null
           payment_status: string
           sector: string
           separated: boolean
@@ -507,6 +538,7 @@ export type Database = {
           items?: Json
           notes?: string | null
           paid?: boolean
+          payment_due_date?: string | null
           payment_status?: string
           sector?: string
           separated?: boolean
@@ -524,6 +556,7 @@ export type Database = {
           items?: Json
           notes?: string | null
           paid?: boolean
+          payment_due_date?: string | null
           payment_status?: string
           sector?: string
           separated?: boolean
