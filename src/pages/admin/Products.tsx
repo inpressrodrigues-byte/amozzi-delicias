@@ -102,10 +102,12 @@ const Products = () => {
     if (editing) {
       const { error } = await supabase.from('products').update(payload).eq('id', editing.id);
       if (error) { toast.error('Erro ao atualizar'); return; }
+      logAdminAction('PRODUTO_EDITADO', `Editou "${form.name}"`, 'products', editing.id);
     } else {
       const { data: newProduct, error } = await supabase.from('products').insert(payload).select('id').single();
       if (error) { toast.error('Erro ao adicionar'); return; }
       productId = newProduct.id;
+      logAdminAction('PRODUTO_CRIADO', `Criou "${form.name}" — R$${form.price}`, 'products', productId);
     }
 
     // Save nutrition
