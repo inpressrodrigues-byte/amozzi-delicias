@@ -58,6 +58,17 @@ const Recipes = () => {
     },
   });
 
+  const { data: allIngredients } = useQuery({
+    queryKey: ['all-recipe-ingredients-count'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('recipe_ingredients').select('product_id');
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      data.forEach(r => { counts[r.product_id] = (counts[r.product_id] || 0) + 1; });
+      return counts;
+    },
+  });
+
   const { data: ingredients, refetch: refetchIngredients } = useQuery({
     queryKey: ['recipe-ingredients', selectedProduct?.id],
     queryFn: async () => {
