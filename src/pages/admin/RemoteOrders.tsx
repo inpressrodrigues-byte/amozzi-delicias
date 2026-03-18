@@ -125,6 +125,7 @@ const RemoteOrders = () => {
   const [paymentStatus, setPaymentStatus] = useState('nao_pago');
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [notes, setNotes] = useState('');
+  const [paymentDueDate, setPaymentDueDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [pixQrFile, setPixQrFile] = useState<File | null>(null);
