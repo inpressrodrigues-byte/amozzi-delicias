@@ -261,15 +261,16 @@ const RemoteOrders = () => {
     if (selectedItems.length === 0) { toast.error('Selecione ao menos um sabor'); return; }
     setSubmitting(true);
 
-    const payload = {
+    const payload: any = {
       customer_name: name.trim(),
       sector: sector.trim(),
       customer_whatsapp: whatsapp.trim(),
       items: selectedItems as any,
       payment_status: paymentStatus,
-      paid: paymentStatus !== 'nao_pago',
-      billing_status: paymentStatus !== 'nao_pago' ? 'pago' : 'pendente',
+      paid: paymentStatus !== 'nao_pago' && paymentStatus !== 'vai_pagar_em',
+      billing_status: (paymentStatus !== 'nao_pago' && paymentStatus !== 'vai_pagar_em') ? 'pago' : 'pendente',
       notes: notes.trim(),
+      payment_due_date: paymentStatus === 'vai_pagar_em' && paymentDueDate ? paymentDueDate : null,
     };
 
     if (editingOrder) {
