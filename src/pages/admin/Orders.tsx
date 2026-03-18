@@ -100,6 +100,7 @@ const Orders = () => {
     
     const { error } = await supabase.from('orders').delete().eq('id', id);
     if (error) { toast.error('Erro ao excluir pedido'); return; }
+    logAdminAction('PEDIDO_EXCLUÍDO', `Excluiu pedido de "${order?.customer_name}"`, 'orders', id);
     toast.success('Pedido excluído e estoque restaurado!');
     queryClient.invalidateQueries({ queryKey: ['admin-orders-list'] });
     queryClient.invalidateQueries({ queryKey: ['products'] });
