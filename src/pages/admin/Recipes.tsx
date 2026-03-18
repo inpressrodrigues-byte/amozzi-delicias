@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ChefHat, Plus, Trash2, Sparkles, ArrowLeft, Save, Package } from 'lucide-react';
+import { ChefHat, Plus, Trash2, Sparkles, ArrowLeft, Save, Package, CheckCircle2 } from 'lucide-react';
 
 const UNITS = [
   { value: 'g', label: 'Gramas (g)' },
