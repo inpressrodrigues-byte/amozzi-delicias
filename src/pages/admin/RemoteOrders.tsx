@@ -590,13 +590,21 @@ const RemoteOrders = () => {
                   <CheckCircle2 className="h-3 w-3 mr-1" /> Marcar Pago
                 </Button>
               )}
-              {order.payment_status === 'nao_pago' && (order as any).billing_status !== 'pago' && (
+              {(order.payment_status === 'nao_pago' || order.payment_status === 'vai_pagar_em') && (order as any).billing_status !== 'pago' && (
                 <Select value={order.payment_status} onValueChange={v => updatePaymentStatus(order.id, v)}>
                   <SelectTrigger className="h-8 w-36 text-[11px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              )}
+              {order.payment_status === 'vai_pagar_em' && (
+                <Input
+                  type="date"
+                  className="h-8 w-36 text-[11px]"
+                  value={(order as any).payment_due_date || ''}
+                  onChange={e => updatePaymentDueDate(order.id, e.target.value)}
+                />
               )}
             </div>
           </div>
