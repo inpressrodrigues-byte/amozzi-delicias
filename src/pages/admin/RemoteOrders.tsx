@@ -416,8 +416,10 @@ const RemoteOrders = () => {
 
   const deleteOrder = async (id: string) => {
     if (!confirm('Excluir este pedido remoto?')) return;
+    const order = orders?.find((o: any) => o.id === id);
     const { error } = await supabase.from('remote_orders').delete().eq('id', id);
     if (error) { toast.error('Erro ao excluir'); return; }
+    logAdminAction('REMOTO_EXCLUÍDO', `Excluiu pedido de "${order?.customer_name || id}"`, 'remote_orders', id);
     toast.success('Pedido excluído');
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
   };
