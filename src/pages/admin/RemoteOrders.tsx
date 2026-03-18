@@ -344,6 +344,7 @@ const RemoteOrders = () => {
     setWhatsapp(order.customer_whatsapp || '');
     setPaymentStatus(order.payment_status || 'nao_pago');
     setNotes(order.notes || '');
+    setPaymentDueDate(order.payment_due_date || '');
     const items = Array.isArray(order.items) ? (order.items as any[]) : [];
     setSelectedItems(items.map((i: any) => ({
       product_id: i.product_id,
