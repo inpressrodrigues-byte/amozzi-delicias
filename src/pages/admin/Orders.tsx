@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { toast } from 'sonner';
 import { Trash2, MapPin, Check } from 'lucide-react';
+import { logAdminAction } from '@/hooks/useAdminLog';
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
@@ -71,11 +72,10 @@ const Orders = () => {
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', id);
     if (error) { toast.error('Erro ao atualizar status'); return; }
+    const order = orders?.find(o => o.id === id);
+    logAdminAction('PEDIDO_STATUS', `"${order?.customer_name}" → ${statusLabel(status)}`, 'orders', id);
     toast.success(`Status atualizado: ${statusLabel(status)}`);
     queryClient.invalidateQueries({ queryKey: ['admin-orders-list'] });
-
-    // Send WhatsApp notification
-    const order = orders?.find(o => o.id === id);
     if (order) sendWhatsAppNotification(order, status);
   };
 
@@ -100,6 +100,7 @@ const Orders = () => {
     
     const { error } = await supabase.from('orders').delete().eq('id', id);
     if (error) { toast.error('Erro ao excluir pedido'); return; }
+    logAdminAction('PEDIDO_EXCLUÍDO', `Excluiu pedido de "${order?.customer_name}"`, 'orders', id);
     toast.success('Pedido excluído e estoque restaurado!');
     queryClient.invalidateQueries({ queryKey: ['admin-orders-list'] });
     queryClient.invalidateQueries({ queryKey: ['products'] });

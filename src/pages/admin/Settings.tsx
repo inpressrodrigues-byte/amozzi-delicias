@@ -12,6 +12,7 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Save, Plus, Trash2, QrCode, Clock, Eye } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { logAdminAction } from '@/hooks/useAdminLog';
 
 interface DeliveryZone {
   name: string;
@@ -146,6 +147,7 @@ const Settings = () => {
 
       queryClient.invalidateQueries({ queryKey: ['site-settings'] });
       queryClient.invalidateQueries({ queryKey: ['billing-settings'] });
+      logAdminAction('CONFIG_SALVA', 'Atualizou configurações do site', 'site_settings');
       toast.success('Configurações salvas!');
     } catch (err) {
       toast.error('Erro ao salvar');

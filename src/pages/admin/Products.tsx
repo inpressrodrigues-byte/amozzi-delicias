@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import NutritionForm from '@/components/admin/NutritionForm';
+import { logAdminAction } from '@/hooks/useAdminLog';
 import { useProductNutrition, useSaveNutrition, defaultNutrition, type NutritionData } from '@/hooks/useProductNutrition';
 import { useProductCategories } from '@/hooks/useProductCategories';
 
@@ -101,10 +102,12 @@ const Products = () => {
     if (editing) {
       const { error } = await supabase.from('products').update(payload).eq('id', editing.id);
       if (error) { toast.error('Erro ao atualizar'); return; }
+      logAdminAction('PRODUTO_EDITADO', `Editou "${form.name}"`, 'products', editing.id);
     } else {
       const { data: newProduct, error } = await supabase.from('products').insert(payload).select('id').single();
       if (error) { toast.error('Erro ao adicionar'); return; }
       productId = newProduct.id;
+      logAdminAction('PRODUTO_CRIADO', `Criou "${form.name}" — R$${form.price}`, 'products', productId);
     }
 
     // Save nutrition
@@ -120,8 +123,10 @@ const Products = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir este produto?')) return;
+    const product = products?.find(p => p.id === id);
     await supabase.from('products').delete().eq('id', id);
     queryClient.invalidateQueries({ queryKey: ['products'] });
+    logAdminAction('PRODUTO_EXCLUÍDO', `Excluiu "${product?.name || id}"`, 'products', id);
     toast.success('Produto excluído');
   };
 

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { logAdminAction } from '@/hooks/useAdminLog';
 
 // ── Notification Sound ──
 const playNotificationSound = () => {
@@ -278,11 +279,13 @@ const RemoteOrders = () => {
       setSubmitting(false);
       if (error) { toast.error('Erro ao atualizar pedido'); return; }
       toast.success('Pedido atualizado!');
+      logAdminAction('REMOTO_EDITADO', `Editou pedido de "${name}"`, 'remote_orders', editingOrder.id);
     } else {
       const { error } = await supabase.from('remote_orders').insert(payload);
       setSubmitting(false);
       if (error) { toast.error('Erro ao criar pedido'); return; }
       toast.success('Pedido remoto criado!');
+      logAdminAction('REMOTO_CRIADO', `Criou pedido para "${name}"`, 'remote_orders');
     }
 
     // Deduct stock for each item
@@ -413,8 +416,10 @@ const RemoteOrders = () => {
 
   const deleteOrder = async (id: string) => {
     if (!confirm('Excluir este pedido remoto?')) return;
+    const order = orders?.find((o: any) => o.id === id);
     const { error } = await supabase.from('remote_orders').delete().eq('id', id);
     if (error) { toast.error('Erro ao excluir'); return; }
+    logAdminAction('REMOTO_EXCLUÍDO', `Excluiu pedido de "${order?.customer_name || id}"`, 'remote_orders', id);
     toast.success('Pedido excluído');
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
   };

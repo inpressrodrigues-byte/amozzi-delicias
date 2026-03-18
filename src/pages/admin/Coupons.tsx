@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Trash2, Tag, Percent, DollarSign } from 'lucide-react';
+import { logAdminAction } from '@/hooks/useAdminLog';
 
 const Coupons = () => {
   const queryClient = useQueryClient();
@@ -56,6 +57,7 @@ const Coupons = () => {
       else toast.error('Erro ao criar cupom');
       return;
     }
+    logAdminAction('CUPOM_CRIADO', `Criou cupom "${form.code.toUpperCase()}" — ${form.discount_value}${form.discount_type === 'percentage' ? '%' : ' R$'}`, 'coupons');
     toast.success('Cupom criado!');
     queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
     setDialogOpen(false);
@@ -69,8 +71,10 @@ const Coupons = () => {
 
   const deleteCoupon = async (id: string) => {
     if (!confirm('Excluir este cupom?')) return;
+    const coupon = coupons?.find((c: any) => c.id === id);
     await supabase.from('coupons' as any).delete().eq('id', id);
     queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+    logAdminAction('CUPOM_EXCLUÍDO', `Excluiu cupom "${coupon?.code || id}"`, 'coupons', id);
     toast.success('Cupom excluído');
   };
 

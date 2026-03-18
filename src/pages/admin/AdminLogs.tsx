@@ -1,16 +1,32 @@
 import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { Shield, Search, Activity } from 'lucide-react';
+import { Shield, Search, User, Clock, Zap } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 
 const ALLOWED_EMAIL_PREFIX = 'inpress.rodrigues';
+
+const ACTION_LABELS: Record<string, { label: string; color: string }> = {
+  PRODUTO_CRIADO: { label: 'Produto criado', color: 'bg-green-100 text-green-800' },
+  PRODUTO_EDITADO: { label: 'Produto editado', color: 'bg-blue-100 text-blue-800' },
+  PRODUTO_EXCLUÍDO: { label: 'Produto excluído', color: 'bg-red-100 text-red-800' },
+  PEDIDO_STATUS: { label: 'Status pedido', color: 'bg-purple-100 text-purple-800' },
+  PEDIDO_EXCLUÍDO: { label: 'Pedido excluído', color: 'bg-red-100 text-red-800' },
+  REMOTO_CRIADO: { label: 'Remoto criado', color: 'bg-green-100 text-green-800' },
+  REMOTO_EDITADO: { label: 'Remoto editado', color: 'bg-blue-100 text-blue-800' },
+  REMOTO_EXCLUÍDO: { label: 'Remoto excluído', color: 'bg-red-100 text-red-800' },
+  CUPOM_CRIADO: { label: 'Cupom criado', color: 'bg-green-100 text-green-800' },
+  CUPOM_EXCLUÍDO: { label: 'Cupom excluído', color: 'bg-red-100 text-red-800' },
+  CONFIG_SALVA: { label: 'Config salva', color: 'bg-amber-100 text-amber-800' },
+  BACKUP_EXPORT: { label: 'Backup exportado', color: 'bg-cyan-100 text-cyan-800' },
+  BACKUP_IMPORT: { label: 'Backup importado', color: 'bg-orange-100 text-orange-800' },
+};
 
 const AdminLogs = () => {
   const { user } = useAuth();
@@ -73,32 +89,53 @@ const AdminLogs = () => {
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
+      ) : filtered?.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">Nenhum log encontrado.</p>
       ) : (
-        <div className="space-y-2">
-          {filtered?.map(log => (
-            <Card key={log.id} className="p-3">
-              <div className="flex items-start gap-3">
-                <Activity className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-mono bg-muted px-1.5 py-0.5 rounded">{log.action}</span>
-                    {log.table_name && (
-                      <span className="text-[10px] text-muted-foreground">em {log.table_name}</span>
-                    )}
-                  </div>
-                  {log.details && <p className="text-[12px] text-foreground mt-1">{log.details}</p>}
-                  <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
-                    <span>{log.user_email}</span>
-                    <span>{format(new Date(log.created_at), "dd/MM/yy HH:mm:ss", { locale: ptBR })}</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-          {filtered?.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhum log encontrado.</p>
-          )}
-        </div>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[180px]">O que fez</TableHead>
+                  <TableHead>Detalhes</TableHead>
+                  <TableHead className="w-[200px]">Quem fez</TableHead>
+                  <TableHead className="w-[160px]">Quando</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered?.map(log => {
+                  const actionInfo = ACTION_LABELS[log.action] || { label: log.action, color: 'bg-muted text-muted-foreground' };
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full ${actionInfo.color}`}>
+                          <Zap className="h-3 w-3" />
+                          {actionInfo.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-[13px] text-foreground max-w-[300px] truncate">
+                        {log.details || '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                          <User className="h-3 w-3" />
+                          <span className="truncate max-w-[160px]">{log.user_email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(log.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       )}
     </AdminLayout>
   );
