@@ -303,34 +303,40 @@ const Recipes = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products?.map(product => {
-          return (
-            <Card
-              key={product.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setSelectedProduct(product)}
-            >
-              <CardContent className="p-4 flex items-center gap-3">
-                {product.image_url ? (
-                  <img src={product.image_url} alt={product.name} className="w-14 h-14 rounded-lg object-cover" />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
-                    <Package className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{product.name}</p>
-                  <p className="text-xs text-muted-foreground">{product.category}</p>
-                  <p className="text-xs mt-1">
-                    Custo: <span className="font-semibold">R$ {Number(product.cost).toFixed(2)}</span>
-                    {' · '}Venda: <span className="font-semibold">R$ {Number(product.price).toFixed(2)}</span>
-                  </p>
+      {products?.map(product => {
+        const hasIngredients = (allIngredients?.[product.id] || 0) > 0;
+        return (
+          <Card
+            key={product.id}
+            className="cursor-pointer hover:shadow-md transition-shadow relative"
+            onClick={() => setSelectedProduct(product)}
+          >
+            {hasIngredients && (
+              <div className="absolute top-2 right-2 z-10">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              </div>
+            )}
+            <CardContent className="p-4 flex items-center gap-3">
+              {product.image_url ? (
+                <img src={product.image_url} alt={product.name} className="w-14 h-14 rounded-lg object-cover" />
+              ) : (
+                <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
+                  <Package className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <ChefHat className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          );
-        })}
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{product.name}</p>
+                <p className="text-xs text-muted-foreground">{product.category}</p>
+                <p className="text-xs mt-1">
+                  Custo: <span className="font-semibold">R$ {Number(product.cost).toFixed(2)}</span>
+                  {' · '}Venda: <span className="font-semibold">R$ {Number(product.price).toFixed(2)}</span>
+                </p>
+              </div>
+              <ChefHat className="h-5 w-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        );
+      })}
       </div>
     </AdminLayout>
   );
