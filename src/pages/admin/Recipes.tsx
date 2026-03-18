@@ -139,23 +139,9 @@ const Recipes = () => {
 
   const saveRecipeCost = async () => {
     if (!selectedProduct || !ingredients?.length) return;
-    const convert = (qty: number, unit: string, pkgQty: number, pkgUnit: string): number => {
-      let usedInBase = qty;
-      let pkgInBase = pkgQty;
-      if (unit === 'g' && pkgUnit === 'kg') { pkgInBase = pkgQty * 1000; }
-      else if (unit === 'ml' && pkgUnit === 'L') { pkgInBase = pkgQty * 1000; }
-      else if (unit === 'un' && pkgUnit === 'dz') { pkgInBase = pkgQty * 12; }
-      return usedInBase / pkgInBase;
-    };
-
-    let totalCost = 0;
-    ingredients.forEach(ing => {
-      const fraction = convert(Number(ing.quantity_used), ing.quantity_unit, Number(ing.package_quantity), ing.package_unit);
-      totalCost += fraction * Number(ing.package_price);
-    });
-
-    await supabase.from('products').update({ cost: totalCost }).eq('id', selectedProduct.id);
-    toast.success(`Custo atualizado: R$ ${totalCost.toFixed(2)}`);
+    const costPerUnit = totalRecipeCost / (batchYield || 1);
+    await supabase.from('products').update({ cost: costPerUnit }).eq('id', selectedProduct.id);
+    toast.success(`Custo por unidade atualizado: R$ ${costPerUnit.toFixed(2)}`);
     queryClient.invalidateQueries({ queryKey: ['all-products-recipes'] });
   };
 
