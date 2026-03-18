@@ -352,15 +352,27 @@ const RemoteOrders = () => {
   };
 
   const updatePaymentStatus = async (id: string, status: string) => {
-    const updateData: any = { payment_status: status, paid: status !== 'nao_pago' };
-    if (status !== 'nao_pago') {
+    const updateData: any = { payment_status: status, paid: status !== 'nao_pago' && status !== 'vai_pagar_em' };
+    if (status !== 'nao_pago' && status !== 'vai_pagar_em') {
       updateData.billing_status = 'pago';
+    }
+    if (status !== 'vai_pagar_em') {
+      updateData.payment_due_date = null;
     }
     const { error } = await supabase.from('remote_orders').update(updateData).eq('id', id);
     if (error) { toast.error('Erro ao atualizar'); return; }
     queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
     queryClient.invalidateQueries({ queryKey: ['admin-remote-orders'] });
     queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['remote-orders-calendar'] });
+  };
+
+  const updatePaymentDueDate = async (id: string, date: string) => {
+    const { error } = await supabase.from('remote_orders').update({ payment_due_date: date || null }).eq('id', id);
+    if (error) { toast.error('Erro ao atualizar data'); return; }
+    toast.success('Data de pagamento atualizada');
+    queryClient.invalidateQueries({ queryKey: ['remote-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['remote-orders-calendar'] });
   };
 
   const updateBillingStatus = async (id: string, status: string) => {
