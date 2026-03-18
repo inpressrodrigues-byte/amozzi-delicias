@@ -16,10 +16,13 @@ export const allNavItems = [
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingCart },
   { path: '/admin/coupons', label: 'Cupons', icon: Tag },
   { path: '/admin/remote-orders', label: 'Remotos', icon: ClipboardList },
+  { path: '/admin/payment-calendar', label: 'Calendário Pgtos', icon: CalendarDays },
   { path: '/admin/customers', label: 'Banco de Dados', icon: Database },
   { path: '/admin/settings', label: 'Personalização', icon: Palette },
   { path: '/admin/profiles', label: 'Perfis', icon: UserCog },
   { path: '/admin/ideas', label: 'Ideias', icon: Lightbulb },
+  { path: '/admin/logs', label: 'Log', icon: ScrollText },
+  { path: '/admin/backup', label: 'Backup', icon: HardDrive },
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {

@@ -24,6 +24,9 @@ import TrackOrder from "./pages/TrackOrder";
 import CostCalculator from "./pages/admin/CostCalculator";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import MyOrders from "./pages/MyOrders";
+import PaymentCalendar from "./pages/admin/PaymentCalendar";
+import AdminLogs from "./pages/admin/AdminLogs";
+import Backup from "./pages/admin/Backup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +56,9 @@ const App = () => (
               <Route path="/admin/profiles" element={<Profiles />} />
               <Route path="/admin/calculator" element={<CostCalculator />} />
               <Route path="/admin/ideas" element={<Ideas />} />
+              <Route path="/admin/payment-calendar" element={<PaymentCalendar />} />
+              <Route path="/admin/logs" element={<AdminLogs />} />
+              <Route path="/admin/backup" element={<Backup />} />
               <Route path="/rastrear" element={<TrackOrder />} />
               <Route path="/rastrear/:code" element={<TrackOrder />} />
               <Route path="/meus-pedidos" element={<MyOrders />} />
