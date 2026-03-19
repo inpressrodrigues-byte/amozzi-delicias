@@ -175,18 +175,18 @@ const Quotes = () => {
     if (!manualName.trim()) { toast.error('Preencha o nome do cliente'); return; }
     if (manualFlavors.length === 0) { toast.error('Selecione ao menos um sabor'); return; }
 
-    const { error } = await supabase.from('custom_orders').insert({
+    const { error } = await supabase.from('custom_orders').insert([{
       customer_name: manualName.trim().slice(0, 100),
       customer_whatsapp: manualWhatsapp.trim().slice(0, 20),
       weight_kg: manualWeight,
-      flavors: manualFlavors,
-      extras: manualExtras,
+      flavors: manualFlavors as any,
+      extras: manualExtras as any,
       desired_date: manualDate || null,
       notes: manualNotes.trim().slice(0, 300),
       status: 'orcado',
       quoted_price: manualQuotedPrice,
       cost_estimate: manualCost,
-    });
+    }]);
     if (error) { toast.error('Erro ao criar orçamento'); return; }
     toast.success('Orçamento criado!');
     resetManual();
