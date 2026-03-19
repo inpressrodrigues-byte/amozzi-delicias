@@ -29,6 +29,8 @@ const EncomendaSection = () => {
     );
   };
 
+  const [weightKg, setWeightKg] = useState(1);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.whatsapp.trim()) {
@@ -42,24 +44,40 @@ const EncomendaSection = () => {
 
     setSending(true);
     try {
-      const whatsappNumber = settings?.whatsapp_number?.replace(/\D/g, '') || '';
-      if (!whatsappNumber) {
-        toast.error('WhatsApp da loja não configurado');
+      // Save to database for admin to quote
+      const { error } = await supabase.from('custom_orders').insert({
+        customer_name: form.name,
+        customer_whatsapp: form.whatsapp,
+        weight_kg: weightKg,
+        flavors: selectedFlavors,
+        desired_date: form.date || null,
+        notes: form.notes || '',
+      });
+
+      if (error) {
+        console.error(error);
+        toast.error('Erro ao enviar encomenda');
         return;
       }
 
-      const flavorsList = selectedFlavors.join(', ');
-      const msg = `🎂 *Nova Encomenda de Bolo*\n\n` +
-        `*Nome:* ${form.name}\n` +
-        `*WhatsApp:* ${form.whatsapp}\n` +
-        `*Sabores:* ${flavorsList}\n` +
-        `*Data desejada:* ${form.date || 'A combinar'}\n` +
-        `*Observações:* ${form.notes || 'Nenhuma'}\n\n` +
-        `Enviado pelo site AMOZI 💜`;
+      // Also redirect to WhatsApp
+      const whatsappNumber = settings?.whatsapp_number?.replace(/\D/g, '') || '';
+      if (whatsappNumber) {
+        const flavorsList = selectedFlavors.join(', ');
+        const msg = `🎂 *Nova Encomenda de Bolo*\n\n` +
+          `*Nome:* ${form.name}\n` +
+          `*WhatsApp:* ${form.whatsapp}\n` +
+          `*Peso:* ${weightKg}kg\n` +
+          `*Sabores:* ${flavorsList}\n` +
+          `*Data desejada:* ${form.date || 'A combinar'}\n` +
+          `*Observações:* ${form.notes || 'Nenhuma'}\n\n` +
+          `Enviado pelo site AMOZI 💜`;
+        window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+      }
 
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
-      toast.success('Redirecionando para o WhatsApp...');
+      toast.success('Encomenda enviada com sucesso! Entraremos em contato.');
       setSelectedFlavors([]);
+      setWeightKg(1);
       setForm({ name: '', whatsapp: '', date: '', notes: '' });
     } finally {
       setSending(false);
