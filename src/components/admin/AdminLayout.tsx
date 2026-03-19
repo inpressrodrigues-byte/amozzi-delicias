@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database, UserCog, Lightbulb, Calculator, ChefHat, CalendarDays, ScrollText, HardDrive } from 'lucide-react';
+import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database, UserCog, Lightbulb, Calculator, ChefHat, CalendarDays, ScrollText, HardDrive, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -16,6 +16,7 @@ export const allNavItems = [
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingCart },
   { path: '/admin/coupons', label: 'Cupons', icon: Tag },
   { path: '/admin/remote-orders', label: 'Remotos', icon: ClipboardList },
+  { path: '/admin/quotes', label: 'Orçamentos', icon: FileText },
   { path: '/admin/payment-calendar', label: 'Calendário Pgtos', icon: CalendarDays },
   { path: '/admin/customers', label: 'Banco de Dados', icon: Database },
   { path: '/admin/settings', label: 'Personalização', icon: Palette },

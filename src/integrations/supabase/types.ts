@@ -122,6 +122,51 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_orders: {
+        Row: {
+          cost_estimate: number | null
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          desired_date: string | null
+          flavors: Json
+          id: string
+          notes: string | null
+          quoted_price: number | null
+          status: string
+          updated_at: string
+          weight_kg: number
+        }
+        Insert: {
+          cost_estimate?: number | null
+          created_at?: string
+          customer_name: string
+          customer_whatsapp?: string
+          desired_date?: string | null
+          flavors?: Json
+          id?: string
+          notes?: string | null
+          quoted_price?: number | null
+          status?: string
+          updated_at?: string
+          weight_kg?: number
+        }
+        Update: {
+          cost_estimate?: number | null
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          desired_date?: string | null
+          flavors?: Json
+          id?: string
+          notes?: string | null
+          quoted_price?: number | null
+          status?: string
+          updated_at?: string
+          weight_kg?: number
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
