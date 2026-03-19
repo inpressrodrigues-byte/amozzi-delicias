@@ -27,6 +27,7 @@ import MyOrders from "./pages/MyOrders";
 import PaymentCalendar from "./pages/admin/PaymentCalendar";
 import AdminLogs from "./pages/admin/AdminLogs";
 import Backup from "./pages/admin/Backup";
+import Quotes from "./pages/admin/Quotes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
