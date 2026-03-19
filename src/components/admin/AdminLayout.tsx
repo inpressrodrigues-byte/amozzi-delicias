@@ -16,6 +16,7 @@ export const allNavItems = [
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingCart },
   { path: '/admin/coupons', label: 'Cupons', icon: Tag },
   { path: '/admin/remote-orders', label: 'Remotos', icon: ClipboardList },
+  { path: '/admin/quotes', label: 'Orçamentos', icon: FileText },
   { path: '/admin/payment-calendar', label: 'Calendário Pgtos', icon: CalendarDays },
   { path: '/admin/customers', label: 'Banco de Dados', icon: Database },
   { path: '/admin/settings', label: 'Personalização', icon: Palette },

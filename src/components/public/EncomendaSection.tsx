@@ -144,6 +144,19 @@ const EncomendaSection = () => {
                 </div>
 
                 <div>
+                  <Label htmlFor="enc-weight">Quantidade (kg)</Label>
+                  <Input
+                    id="enc-weight"
+                    type="number"
+                    step="0.5"
+                    min={0.5}
+                    value={weightKg}
+                    onChange={e => setWeightKg(Number(e.target.value))}
+                    className="rounded-lg"
+                  />
+                </div>
+
+                <div>
                   <Label htmlFor="enc-date">Data Desejada</Label>
                   <Input
                     id="enc-date"
