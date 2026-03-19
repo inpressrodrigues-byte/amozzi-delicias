@@ -1,0 +1,1 @@
+ALTER TABLE public.custom_orders ADD COLUMN extras jsonb NOT NULL DEFAULT '[]'::jsonb;

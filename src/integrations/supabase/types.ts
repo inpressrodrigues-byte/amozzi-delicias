@@ -129,6 +129,7 @@ export type Database = {
           customer_name: string
           customer_whatsapp: string
           desired_date: string | null
+          extras: Json
           flavors: Json
           id: string
           notes: string | null
@@ -143,6 +144,7 @@ export type Database = {
           customer_name: string
           customer_whatsapp?: string
           desired_date?: string | null
+          extras?: Json
           flavors?: Json
           id?: string
           notes?: string | null
@@ -157,6 +159,7 @@ export type Database = {
           customer_name?: string
           customer_whatsapp?: string
           desired_date?: string | null
+          extras?: Json
           flavors?: Json
           id?: string
           notes?: string | null
