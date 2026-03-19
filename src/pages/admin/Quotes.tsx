@@ -116,10 +116,10 @@ const Quotes = () => {
     const { error } = await supabase
       .from('custom_orders')
       .update({
-        flavors: selectedFlavors,
+        flavors: selectedFlavors as any,
         quoted_price: quotedPrice,
         cost_estimate: costEstimate,
-        extras: extras,
+        extras: extras as any,
         status: 'orcado',
         updated_at: new Date().toISOString(),
       })
