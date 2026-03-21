@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database, UserCog, Lightbulb, Calculator, ChefHat, CalendarDays, ScrollText, HardDrive, FileText } from 'lucide-react';
+import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Tag, ClipboardList, Menu, Database, UserCog, Lightbulb, Calculator, ChefHat, CalendarDays, ScrollText, HardDrive, FileText, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -24,6 +24,7 @@ export const allNavItems = [
   { path: '/admin/ideas', label: 'Ideias', icon: Lightbulb },
   { path: '/admin/logs', label: 'Log', icon: ScrollText },
   { path: '/admin/backup', label: 'Backup', icon: HardDrive },
+  { path: '/admin/messages', label: 'Mensagens', icon: MessageSquare },
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {

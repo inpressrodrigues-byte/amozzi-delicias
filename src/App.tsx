@@ -28,6 +28,7 @@ import PaymentCalendar from "./pages/admin/PaymentCalendar";
 import AdminLogs from "./pages/admin/AdminLogs";
 import Backup from "./pages/admin/Backup";
 import Quotes from "./pages/admin/Quotes";
+import Messages from "./pages/admin/Messages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/admin/logs" element={<AdminLogs />} />
               <Route path="/admin/backup" element={<Backup />} />
               <Route path="/admin/quotes" element={<Quotes />} />
+              <Route path="/admin/messages" element={<Messages />} />
               <Route path="/rastrear" element={<TrackOrder />} />
               <Route path="/rastrear/:code" element={<TrackOrder />} />
               <Route path="/meus-pedidos" element={<MyOrders />} />
