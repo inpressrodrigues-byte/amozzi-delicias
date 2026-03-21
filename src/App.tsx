@@ -28,6 +28,7 @@ import PaymentCalendar from "./pages/admin/PaymentCalendar";
 import AdminLogs from "./pages/admin/AdminLogs";
 import Backup from "./pages/admin/Backup";
 import Quotes from "./pages/admin/Quotes";
+import Messages from "./pages/admin/Messages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
