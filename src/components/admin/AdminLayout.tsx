@@ -24,6 +24,7 @@ export const allNavItems = [
   { path: '/admin/ideas', label: 'Ideias', icon: Lightbulb },
   { path: '/admin/logs', label: 'Log', icon: ScrollText },
   { path: '/admin/backup', label: 'Backup', icon: HardDrive },
+  { path: '/admin/messages', label: 'Mensagens', icon: MessageSquare },
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
