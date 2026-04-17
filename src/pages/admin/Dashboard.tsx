@@ -153,7 +153,8 @@ const Dashboard = () => {
   // Core metrics
   const onlineRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
   const remoteRevenue = remoteWithTotals.filter(o => o.paid).reduce((sum, o) => sum + o.total, 0);
-  const totalRevenue = onlineRevenue + remoteRevenue;
+  const manualRevenue = manualIncome.reduce((sum, r) => sum + Number(r.amount), 0);
+  const totalRevenue = onlineRevenue + remoteRevenue + manualRevenue;
   const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
   const profit = totalRevenue - totalExpenses;
   const totalOrders = orders.length + remoteOrders.length;
