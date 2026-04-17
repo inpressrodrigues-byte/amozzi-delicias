@@ -16,10 +16,50 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
-import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode } from 'lucide-react';
+import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { logAdminAction } from '@/hooks/useAdminLog';
+import * as XLSX from 'xlsx';
+
+// ── Excel Export Helper ──
+const exportOrdersToExcel = (orders: any[], filename: string) => {
+  if (!orders?.length) { toast.error('Nenhum pedido para exportar'); return; }
+  const rows = orders.map((order) => {
+    const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+    const itemsText = items.map((it: any) => `${it.quantity}x ${it.name}`).join(', ');
+    const total = items.reduce((sum, it: any) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
+    const payOpt = [
+      { value: 'nao_pago', label: 'Não pago' },
+      { value: 'vai_pagar_em', label: 'Vai pagar em' },
+      { value: 'pago', label: 'Pago' },
+    ].find(o => o.value === order.payment_status);
+    const pendente = order.payment_status === 'pago' ? 0 : total;
+    return {
+      'Nome': order.customer_name || '',
+      'WhatsApp': order.customer_whatsapp || '',
+      'Setor': order.sector || '',
+      'O que comprou': itemsText,
+      'Valor Total (R$)': total.toFixed(2).replace('.', ','),
+      'Valor Pendente (R$)': pendente.toFixed(2).replace('.', ','),
+      'Status Pagamento': payOpt?.label || order.payment_status,
+      'Data Pedido': order.created_at ? format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ptBR }) : '',
+      'Data Cobrança': order.billing_date ? format(new Date(order.billing_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }) : '',
+      'Observações': order.notes || '',
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  // Auto column widths
+  const colWidths = Object.keys(rows[0] || {}).map(key => ({
+    wch: Math.max(key.length, ...rows.map(r => String((r as any)[key] || '').length)) + 2,
+  }));
+  (ws as any)['!cols'] = colWidths;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pedidos Remotos');
+  const stamp = format(new Date(), 'yyyy-MM-dd_HH-mm', { locale: ptBR });
+  XLSX.writeFile(wb, `${filename}_${stamp}.xlsx`);
+  toast.success(`Planilha exportada (${rows.length} pedidos)`);
+};
 
 // ── Notification Sound ──
 const playNotificationSound = () => {
@@ -983,6 +1023,14 @@ const RemoteOrders = () => {
                 >
                   <Share2 className="h-3.5 w-3.5" /> WhatsApp
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-[11px] gap-1.5"
+                  onClick={() => exportOrdersToExcel(filteredOrders || [], 'pedidos-remotos')}
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
+                </Button>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1136,16 +1184,26 @@ const RemoteOrders = () => {
             <div className="flex items-center gap-2 mb-3">
               <Filter className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filtros do Histórico</span>
-              {(histFilterName || histFilterPayment !== 'all' || histFilterDateFrom || histFilterDateTo) && (
+              <div className="ml-auto flex items-center gap-2">
+                {(histFilterName || histFilterPayment !== 'all' || histFilterDateFrom || histFilterDateTo) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-[11px]"
+                    onClick={() => { setHistFilterName(''); setHistFilterPayment('all'); setHistFilterDateFrom(''); setHistFilterDateTo(''); }}
+                  >
+                    <X className="h-3 w-3 mr-1" /> Limpar
+                  </Button>
+                )}
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="h-7 text-[11px] ml-auto"
-                  onClick={() => { setHistFilterName(''); setHistFilterPayment('all'); setHistFilterDateFrom(''); setHistFilterDateTo(''); }}
+                  className="h-8 text-[11px] gap-1.5"
+                  onClick={() => exportOrdersToExcel(filteredHistory || [], 'historico-pedidos-remotos')}
                 >
-                  <X className="h-3 w-3 mr-1" /> Limpar
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
                 </Button>
-              )}
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
