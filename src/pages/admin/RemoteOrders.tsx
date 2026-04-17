@@ -183,6 +183,8 @@ const RemoteOrders = () => {
   const [histFilterPayment, setHistFilterPayment] = useState<string>('all');
   const [histFilterDateFrom, setHistFilterDateFrom] = useState('');
   const [histFilterDateTo, setHistFilterDateTo] = useState('');
+  // Para Cobrar filter state
+  const [billFilterQuery, setBillFilterQuery] = useState('');
 
   // Billing settings state
   const [billingSettings, setBillingSettings] = useState({
