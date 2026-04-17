@@ -138,6 +138,11 @@ const RemoteOrders = () => {
   const [filterPayment, setFilterPayment] = useState<string>('all');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
+  // History filter state
+  const [histFilterName, setHistFilterName] = useState('');
+  const [histFilterPayment, setHistFilterPayment] = useState<string>('all');
+  const [histFilterDateFrom, setHistFilterDateFrom] = useState('');
+  const [histFilterDateTo, setHistFilterDateTo] = useState('');
 
   // Billing settings state
   const [billingSettings, setBillingSettings] = useState({
@@ -472,6 +477,18 @@ const RemoteOrders = () => {
     if (filterDateFrom && new Date(order.created_at) < new Date(filterDateFrom)) return false;
     if (filterDateTo) {
       const to = new Date(filterDateTo);
+      to.setHours(23, 59, 59, 999);
+      if (new Date(order.created_at) > to) return false;
+    }
+    return true;
+  });
+
+  const filteredHistory = deliveredOrders?.filter(order => {
+    if (histFilterName && !order.customer_name.toLowerCase().includes(histFilterName.toLowerCase())) return false;
+    if (histFilterPayment !== 'all' && order.payment_status !== histFilterPayment) return false;
+    if (histFilterDateFrom && new Date(order.created_at) < new Date(histFilterDateFrom)) return false;
+    if (histFilterDateTo) {
+      const to = new Date(histFilterDateTo);
       to.setHours(23, 59, 59, 999);
       if (new Date(order.created_at) > to) return false;
     }
@@ -1115,13 +1132,62 @@ const RemoteOrders = () => {
             <p className="text-sm text-muted-foreground">Pedidos entregues. Defina datas de cobrança para gestão.</p>
           </div>
 
+          <div className="bg-card border border-border rounded-xl p-4 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filtros do Histórico</span>
+              {(histFilterName || histFilterPayment !== 'all' || histFilterDateFrom || histFilterDateTo) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-[11px] ml-auto"
+                  onClick={() => { setHistFilterName(''); setHistFilterPayment('all'); setHistFilterDateFrom(''); setHistFilterDateTo(''); }}
+                >
+                  <X className="h-3 w-3 mr-1" /> Limpar
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <Label className="text-[11px]">Nome</Label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input className="pl-8 h-9 text-[12px]" value={histFilterName} onChange={e => setHistFilterName(e.target.value)} placeholder="Buscar..." />
+                </div>
+              </div>
+              <div>
+                <Label className="text-[11px]">Pagamento</Label>
+                <Select value={histFilterPayment} onValueChange={setHistFilterPayment}>
+                  <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {PAYMENT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[11px]">De</Label>
+                <Input type="date" className="h-9 text-[12px]" value={histFilterDateFrom} onChange={e => setHistFilterDateFrom(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-[11px]">Até</Label>
+                <Input type="date" className="h-9 text-[12px]" value={histFilterDateTo} onChange={e => setHistFilterDateTo(e.target.value)} />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-3">
+              {filteredHistory?.length || 0} de {deliveredOrders?.length || 0} pedidos
+            </p>
+          </div>
+
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
             <div className="space-y-3">
-              {deliveredOrders?.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
-              {deliveredOrders?.length === 0 && (
-                <p className="text-muted-foreground text-center py-8 text-sm">Nenhum pedido no histórico.</p>
+              {filteredHistory?.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
+              {filteredHistory?.length === 0 && (
+                <p className="text-muted-foreground text-center py-8 text-sm">
+                  {deliveredOrders?.length === 0 ? 'Nenhum pedido no histórico.' : 'Nenhum pedido encontrado com esses filtros.'}
+                </p>
               )}
             </div>
           )}

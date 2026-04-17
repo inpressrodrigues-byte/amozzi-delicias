@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ProfitAIChat from '@/components/admin/ProfitAIChat';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -496,7 +497,7 @@ const Dashboard = () => {
       </div>
 
       {/* Products count */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <Card className="border-0 shadow-md">
           <CardContent className="p-4 text-center">
             <Package className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
@@ -526,6 +527,36 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Profit Consultant */}
+      <ProfitAIChat
+        context={{
+          period: periodLabels[period],
+          totalRevenue: Number(totalRevenue.toFixed(2)),
+          totalExpenses: Number(totalExpenses.toFixed(2)),
+          profit: Number(profit.toFixed(2)),
+          profitMargin: Number(profitMargin.toFixed(2)),
+          cogs: Number(cogs.toFixed(2)),
+          grossProfit: Number(grossProfit.toFixed(2)),
+          avgTicket: Number(avgTicket.toFixed(2)),
+          totalOrders,
+          unpaidTotal: Number(unpaidTotal.toFixed(2)),
+          onlineRevenue: Number(onlineRevenue.toFixed(2)),
+          remoteRevenue: Number(remoteRevenue.toFixed(2)),
+          topProducts: topProducts.map(p => ({
+            name: p.name,
+            qty: p.qty,
+            revenue: Number(p.revenue.toFixed(2)),
+          })),
+          expenseByCategory: expenseByCategory.map(e => ({ name: e.name, value: e.value })),
+          productMargins: (allProducts ?? []).map(p => {
+            const price = Number(p.price) || 0;
+            const cost = Number(p.cost) || 0;
+            const margin = price > 0 ? ((price - cost) / price) * 100 : 0;
+            return { name: p.name, price, cost, margin: Number(margin.toFixed(1)) };
+          }).sort((a, b) => a.margin - b.margin).slice(0, 15),
+        }}
+      />
     </AdminLayout>
   );
 };
