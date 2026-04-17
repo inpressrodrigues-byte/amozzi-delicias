@@ -1133,54 +1133,110 @@ const RemoteOrders = () => {
                 </DialogContent>
               </Dialog>
             </div>
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="h-4 w-4 text-amber-500" />
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Pendentes</span>
-                </div>
-                <p className="text-2xl font-semibold">{pendentes.length}</p>
+            {/* Filter */}
+            <div className="bg-card border border-border rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Buscar</span>
+                {billFilterQuery && (
+                  <Button variant="ghost" size="sm" className="h-7 text-[11px] ml-auto" onClick={() => setBillFilterQuery('')}>
+                    <X className="h-3 w-3 mr-1" /> Limpar
+                  </Button>
+                )}
               </div>
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Send className="h-4 w-4 text-blue-500" />
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Cobrados</span>
-                </div>
-                <p className="text-2xl font-semibold">{cobrados.length}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Total p/ cobrar</span>
-                </div>
-                <p className="text-2xl font-semibold">{paraCobrar.length}</p>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  className="pl-8 h-9 text-[12px]"
+                  value={billFilterQuery}
+                  onChange={e => setBillFilterQuery(e.target.value)}
+                  placeholder="Buscar por nome ou WhatsApp..."
+                />
               </div>
             </div>
 
-            {/* Pendentes */}
-            {pendentes.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-amber-500" /> Aguardando cobrança
-                </h3>
-                <div className="space-y-3">
-                  {pendentes.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
-                </div>
-              </div>
-            )}
+            {(() => {
+              const matchQuery = (o: any) => {
+                if (!billFilterQuery.trim()) return true;
+                const q = billFilterQuery.toLowerCase();
+                const name = (o.customer_name || '').toLowerCase();
+                const wa = (o.customer_whatsapp || '').replace(/\D/g, '');
+                const qDigits = q.replace(/\D/g, '');
+                return name.includes(q) || (qDigits && wa.includes(qDigits));
+              };
+              const filteredPendentes = pendentes.filter(matchQuery);
+              const filteredCobrados = cobrados.filter(matchQuery);
+              const filteredParaCobrar = paraCobrar.filter(matchQuery);
+              const orderTotal = (o: any) => {
+                const items = Array.isArray(o.items) ? o.items as any[] : [];
+                return items.reduce((s: number, it: any) => s + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
+              };
+              const totalPendenteValue = filteredParaCobrar.reduce((s, o) => s + orderTotal(o), 0);
 
-            {/* Cobrados */}
-            {cobrados.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Send className="h-4 w-4 text-blue-500" /> Cobrados — aguardando pagamento
-                </h3>
-                <div className="space-y-3">
-                  {cobrados.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
-                </div>
-              </div>
-            )}
+              return (
+                <>
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Clock className="h-4 w-4 text-amber-500" />
+                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Pendentes</span>
+                      </div>
+                      <p className="text-2xl font-semibold">{filteredPendentes.length}</p>
+                    </div>
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Send className="h-4 w-4 text-blue-500" />
+                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Cobrados</span>
+                      </div>
+                      <p className="text-2xl font-semibold">{filteredCobrados.length}</p>
+                    </div>
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Total p/ cobrar</span>
+                      </div>
+                      <p className="text-2xl font-semibold">{filteredParaCobrar.length}</p>
+                    </div>
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Valor pendente</span>
+                      </div>
+                      <p className="text-2xl font-semibold text-destructive">R$ {totalPendenteValue.toFixed(2).replace('.', ',')}</p>
+                    </div>
+                  </div>
+
+                  {/* Pendentes */}
+                  {filteredPendentes.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-amber-500" /> Aguardando cobrança
+                      </h3>
+                      <div className="space-y-3">
+                        {filteredPendentes.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cobrados */}
+                  {filteredCobrados.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <Send className="h-4 w-4 text-blue-500" /> Cobrados — aguardando pagamento
+                      </h3>
+                      <div className="space-y-3">
+                        {filteredCobrados.map(order => <OrderCard key={order.id} order={order} showBillingControls />)}
+                      </div>
+                    </div>
+                  )}
+
+                  {filteredParaCobrar.length === 0 && paraCobrar.length > 0 && (
+                    <p className="text-center py-8 text-sm text-muted-foreground">Nenhum resultado para "{billFilterQuery}".</p>
+                  )}
+                </>
+              );
+            })()}
 
             {paraCobrar.length === 0 && (
               <div className="text-center py-12">
