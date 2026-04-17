@@ -562,6 +562,8 @@ const RemoteOrders = () => {
   // ── Order Card ──
   const OrderCard = ({ order, showBillingControls = false }: { order: any; showBillingControls?: boolean }) => {
     const items = Array.isArray(order.items) ? order.items as any[] : [];
+    const totalValue = items.reduce((sum: number, it: any) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
+    const isPaid = order.payment_status === 'pago' || order.payment_status === 'pago_dinheiro' || (order as any).billing_status === 'pago';
     return (
       <div key={order.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
@@ -596,6 +598,20 @@ const RemoteOrders = () => {
             </span>
           ))}
         </div>
+
+        {totalValue > 0 && (
+          <div className="flex items-center justify-between gap-2 text-[12px]">
+            <span className="text-muted-foreground">Total:</span>
+            <div className="flex items-center gap-3">
+              <span className="font-medium">R$ {totalValue.toFixed(2).replace('.', ',')}</span>
+              {!isPaid && (
+                <span className="font-semibold text-destructive">
+                  Pendente: R$ {totalValue.toFixed(2).replace('.', ',')}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {order.notes && <p className="text-[11px] text-muted-foreground italic">Obs: {order.notes}</p>}
 
