@@ -127,6 +127,11 @@ const Dashboard = () => {
     if (!periodStart) return recs;
     return recs.filter(r => isAfter(parseISO(r.date), periodStart));
   }, [allManualRecords, periodStart]);
+  const manualIncome = useMemo(() => {
+    const recs = (allManualRecords ?? []).filter(r => r.type === 'entrada' || r.type === 'venda');
+    if (!periodStart) return recs;
+    return recs.filter(r => isAfter(parseISO(r.date), periodStart));
+  }, [allManualRecords, periodStart]);
   const expenses = useMemo(() => [
     ...expensesRaw.map(e => ({ date: e.date, amount: e.amount, description: e.description, category: e.category })),
     ...manualRecords.map(r => ({ date: r.date, amount: r.amount, description: r.description, category: r.category })),
@@ -148,7 +153,8 @@ const Dashboard = () => {
   // Core metrics
   const onlineRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
   const remoteRevenue = remoteWithTotals.filter(o => o.paid).reduce((sum, o) => sum + o.total, 0);
-  const totalRevenue = onlineRevenue + remoteRevenue;
+  const manualRevenue = manualIncome.reduce((sum, r) => sum + Number(r.amount), 0);
+  const totalRevenue = onlineRevenue + remoteRevenue + manualRevenue;
   const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
   const profit = totalRevenue - totalExpenses;
   const totalOrders = orders.length + remoteOrders.length;
@@ -296,6 +302,7 @@ const Dashboard = () => {
   const financialDetails = [
     { label: 'Receita Online', value: onlineRevenue },
     { label: 'Receita Remota', value: remoteRevenue },
+    { label: 'Receita Manual', value: manualRevenue },
     { label: 'Valores a Receber', value: unpaidTotal },
     { label: 'Custo dos Produtos (CMV)', value: cogs },
     { label: 'Lucro Bruto', value: grossProfit },
