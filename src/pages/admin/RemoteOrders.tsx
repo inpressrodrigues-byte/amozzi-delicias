@@ -1023,6 +1023,14 @@ const RemoteOrders = () => {
                 >
                   <Share2 className="h-3.5 w-3.5" /> WhatsApp
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-[11px] gap-1.5"
+                  onClick={() => exportOrdersToExcel(filteredOrders || [], 'pedidos-remotos')}
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
+                </Button>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
