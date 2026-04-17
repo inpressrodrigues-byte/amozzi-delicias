@@ -302,6 +302,7 @@ const Dashboard = () => {
   const financialDetails = [
     { label: 'Receita Online', value: onlineRevenue },
     { label: 'Receita Remota', value: remoteRevenue },
+    { label: 'Receita Manual', value: manualRevenue },
     { label: 'Valores a Receber', value: unpaidTotal },
     { label: 'Custo dos Produtos (CMV)', value: cogs },
     { label: 'Lucro Bruto', value: grossProfit },
