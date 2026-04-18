@@ -35,6 +35,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useAutoPrintOrders();
 
   if (loading) {
     return (
