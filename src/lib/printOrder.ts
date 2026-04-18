@@ -307,13 +307,3 @@ export function printOrderReceiptSilent(order: PrintOrderData, settings?: PrintS
   }
 }
 
-  }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  w.addEventListener('load', () => {
-    setTimeout(() => {
-      try { w.print(); } catch {}
-    }, 200);
-  });
-}
