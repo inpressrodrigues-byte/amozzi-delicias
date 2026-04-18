@@ -127,35 +127,45 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
     ? `<div class="center"><img src="${escapeHtml(cfg.logo_url)}" style="max-width:40mm;max-height:20mm;object-fit:contain" /></div>`
     : '';
 
+  // Largura útil real do papel 58mm geralmente é ~48mm (a impressora reserva borda física)
+  const printableWidth = Math.max(40, (cfg.paper_width_mm ?? 58) - 10);
+
   return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Pedido ${escapeHtml(order.customer_name)}</title>
 <style>
-  @page { size: ${cfg.paper_width_mm}mm auto; margin: 0; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  @page { size: ${cfg.paper_width_mm}mm auto; margin: 0 !important; padding: 0 !important; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { margin: 0 !important; padding: 0 !important; width: ${cfg.paper_width_mm}mm; }
   body {
-    width: ${cfg.paper_width_mm}mm;
-    max-width: ${cfg.paper_width_mm}mm;
+    width: ${printableWidth}mm;
+    max-width: ${printableWidth}mm;
     font-family: 'Courier New', monospace;
     font-size: ${cfg.font_size}px;
     line-height: 1.35;
     color: #000;
-    padding: 2mm 1mm 6mm 1mm;
+    padding: 2mm 0 6mm 0;
+    margin: 0 auto !important;
     word-wrap: break-word;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   * { max-width: 100%; }
   .center { text-align: center; }
   .bold { font-weight: 700; }
   .big { font-size: ${cfg.font_size + 3}px; font-weight: 700; }
   .sep { border-top: 1px dashed #000; margin: 4px 0; }
-  .row { display: flex; justify-content: space-between; gap: 6px; }
-  .row span:last-child { white-space: nowrap; }
-  .lbl { font-size: ${cfg.font_size - 1}px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 1px; }
+  .row { display: flex; justify-content: space-between; gap: 4px; width: 100%; }
+  .row span:last-child { white-space: nowrap; flex-shrink: 0; }
+  .row span:first-child { word-break: break-word; min-width: 0; }
+  .lbl { font-size: ${cfg.font_size - 1}px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 1px; }
   .block { margin: 4px 0; }
   .badge { display: inline-block; padding: 2px 6px; border: 1px solid #000; font-weight: 700; font-size: ${cfg.font_size + 1}px; margin-top: 2px; }
   .pending { font-size: ${cfg.font_size + 2}px; font-weight: 700; }
-  @media print { body { padding: 1mm 1mm 4mm 1mm; } }
+  @media print {
+    @page { size: ${cfg.paper_width_mm}mm auto; margin: 0 !important; }
+    html, body { margin: 0 !important; padding: 0 !important; }
+    body { padding: 1mm 0 4mm 0; margin: 0 auto !important; }
+  }
 </style></head>
 <body>
   ${logoHtml}
