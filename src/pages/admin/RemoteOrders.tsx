@@ -149,6 +149,7 @@ const BILLING_STATUS_OPTIONS = [
 const RemoteOrders = () => {
   const queryClient = useQueryClient();
   const { data: products } = useProducts(true);
+  const { data: siteSettings } = useSiteSettings();
 
   // Customer database for auto-fill
   const { data: customerDb } = useQuery({
