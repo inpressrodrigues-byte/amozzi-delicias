@@ -233,11 +233,17 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
 </body></html>`;
 }
 
+/**
+ * Print via popup window — used when triggered by a user click.
+ * Browsers block window.open() outside of user gestures, so for automatic
+ * (Realtime/polling) prints use printOrderReceiptSilent below.
+ */
 export function printOrderReceipt(order: PrintOrderData, settings?: PrintSettings | null) {
   const html = buildReceiptHtml(order, settings);
   const w = window.open('', '_blank', 'width=380,height=640');
   if (!w) {
-    alert('Permita pop-ups para imprimir o pedido.');
+    // Fallback to silent iframe if popup is blocked
+    printOrderReceiptSilent(order, settings);
     return;
   }
   w.document.open();
@@ -249,3 +255,55 @@ export function printOrderReceipt(order: PrintOrderData, settings?: PrintSetting
     }, 200);
   });
 }
+
+/**
+ * Print via hidden iframe — works without a user gesture, so it's the
+ * right choice for automatic printing triggered by Realtime/polling.
+ * The iframe is removed after the print dialog closes (or after 30s).
+ */
+export function printOrderReceiptSilent(order: PrintOrderData, settings?: PrintSettings | null) {
+  const html = buildReceiptHtml(order, settings);
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.visibility = 'hidden';
+  document.body.appendChild(iframe);
+
+  const cleanup = () => {
+    setTimeout(() => {
+      try { iframe.remove(); } catch {}
+    }, 1000);
+  };
+
+  iframe.onload = () => {
+    setTimeout(() => {
+      try {
+        const win = iframe.contentWindow;
+        if (!win) return cleanup();
+        win.focus();
+        win.print();
+        // Some browsers fire afterprint on the iframe window
+        win.addEventListener('afterprint', cleanup);
+        // Safety cleanup
+        setTimeout(cleanup, 30000);
+      } catch (e) {
+        console.error('silent print failed', e);
+        cleanup();
+      }
+    }, 250);
+  };
+
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (doc) {
+    doc.open();
+    doc.write(html);
+    doc.close();
+  } else {
+    iframe.srcdoc = html;
+  }
+}
+

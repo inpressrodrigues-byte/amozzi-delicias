@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
-import { printOrderReceipt, type PrintSettings } from '@/lib/printOrder';
+import { printOrderReceiptSilent, type PrintSettings } from '@/lib/printOrder';
 import { toast } from 'sonner';
 
 /**
@@ -27,7 +27,7 @@ export const useAutoPrintOrders = () => {
 
       const items = Array.isArray(order.items) ? order.items : [];
       try {
-        printOrderReceipt(
+        printOrderReceiptSilent(
           {
             source: 'site',
             customer_name: order.customer_name,
