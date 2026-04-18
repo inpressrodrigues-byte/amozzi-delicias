@@ -629,6 +629,7 @@ export type Database = {
           logo_url: string | null
           payment_methods: Json | null
           primary_color: string | null
+          print_settings: Json | null
           product_categories: Json | null
           secondary_color: string | null
           store_hours: Json | null
@@ -651,6 +652,7 @@ export type Database = {
           logo_url?: string | null
           payment_methods?: Json | null
           primary_color?: string | null
+          print_settings?: Json | null
           product_categories?: Json | null
           secondary_color?: string | null
           store_hours?: Json | null
@@ -673,6 +675,7 @@ export type Database = {
           logo_url?: string | null
           payment_methods?: Json | null
           primary_color?: string | null
+          print_settings?: Json | null
           product_categories?: Json | null
           secondary_color?: string | null
           store_hours?: Json | null

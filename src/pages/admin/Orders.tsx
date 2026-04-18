@@ -193,7 +193,7 @@ const Orders = () => {
                           payment_method: order.payment_method,
                           status: order.status,
                           tracking_code: order.tracking_code,
-                        })}
+                        }, { ...((settings as any)?.print_settings || {}), logo_url: settings?.logo_url })}
                       >
                         <Printer className="h-4 w-4" />
                       </Button>

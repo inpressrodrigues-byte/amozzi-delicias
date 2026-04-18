@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { Save, Plus, Trash2, QrCode, Clock, Eye } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { logAdminAction } from '@/hooks/useAdminLog';
+import { PrintSettingsCard } from '@/components/admin/PrintSettingsCard';
+import type { PrintSettings } from '@/lib/printOrder';
 
 interface DeliveryZone {
   name: string;
@@ -60,6 +62,20 @@ const Settings = () => {
     closed_message: 'Estamos fechados no momento. Os pedidos serão separados no próximo horário de funcionamento.',
   });
   const [hiddenMenus, setHiddenMenus] = useState<string[]>([]);
+  const [printSettings, setPrintSettings] = useState<PrintSettings>({
+    auto_print_enabled: false,
+    header_title: 'AMOZI',
+    header_subtitle: 'Delícias no Pote',
+    footer_message: 'Obrigada pela preferência! 💕',
+    extra_info: '',
+    show_logo: false,
+    show_tracking_code: true,
+    show_whatsapp: true,
+    show_address: true,
+    show_notes: true,
+    font_size: 11,
+    paper_width_mm: 58,
+  });
 
   const { data: billingSettings } = useQuery({
     queryKey: ['billing-settings'],
@@ -98,6 +114,8 @@ const Settings = () => {
       if (sh) setStoreHours(prev => ({ ...prev, ...sh }));
       const hm = (settings as any).hidden_admin_menus;
       if (Array.isArray(hm)) setHiddenMenus(hm);
+      const ps = (settings as any).print_settings;
+      if (ps) setPrintSettings((prev) => ({ ...prev, ...ps }));
     }
   }, [settings]);
 
@@ -133,7 +151,7 @@ const Settings = () => {
 
       const { error } = await supabase
         .from('site_settings')
-        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones, product_categories: productCategories, store_hours: storeHours, hidden_admin_menus: hiddenMenus } as any)
+        .update({ ...form, logo_url, hero_image_url, delivery_zones: deliveryZones, product_categories: productCategories, store_hours: storeHours, hidden_admin_menus: hiddenMenus, print_settings: printSettings } as any)
         .eq('id', settings!.id);
 
       if (error) throw error;
@@ -168,6 +186,12 @@ const Settings = () => {
       </div>
 
       <div className="grid gap-6">
+        <PrintSettingsCard
+          value={printSettings}
+          onChange={setPrintSettings}
+          logoUrl={settings?.logo_url}
+        />
+
         <Card>
           <CardHeader><CardTitle>Logo</CardTitle></CardHeader>
           <CardContent className="space-y-3">

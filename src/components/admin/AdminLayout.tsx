@@ -6,6 +6,7 @@ import { Package, DollarSign, Palette, LogOut, LayoutDashboard, ShoppingCart, Ta
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useAutoPrintOrders } from '@/hooks/useAutoPrintOrders';
 
 export const allNavItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -34,6 +35,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useAutoPrintOrders();
 
   if (loading) {
     return (

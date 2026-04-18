@@ -18,6 +18,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
 import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode, FileSpreadsheet, Printer } from 'lucide-react';
 import { printOrderReceipt } from '@/lib/printOrder';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { logAdminAction } from '@/hooks/useAdminLog';
@@ -148,6 +149,7 @@ const BILLING_STATUS_OPTIONS = [
 const RemoteOrders = () => {
   const queryClient = useQueryClient();
   const { data: products } = useProducts(true);
+  const { data: siteSettings } = useSiteSettings();
 
   // Customer database for auto-fill
   const { data: customerDb } = useQuery({
@@ -591,7 +593,7 @@ const RemoteOrders = () => {
                 items: items.map((it: any) => ({ name: it.name, quantity: Number(it.quantity) || 1, price: Number(it.price) || 0 })),
                 total: totalValue,
                 payment_status: order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'),
-              })}
+              }, { ...((siteSettings as any)?.print_settings || {}), logo_url: siteSettings?.logo_url })}
               title="Imprimir pedido (58mm)"
               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
