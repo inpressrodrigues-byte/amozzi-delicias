@@ -16,6 +16,8 @@ export type PrintSettings = {
   font_size?: number;
   paper_width_mm?: number;
   left_offset_mm?: number;
+  font_weight?: number; // 400 normal, 600 semi, 700 bold, 800 extra-bold
+  logo_size_mm?: number; // largura máxima da logo em mm
 };
 
 const DEFAULT_PRINT_SETTINGS: Required<Omit<PrintSettings, 'logo_url'>> & { logo_url: string | null } = {
@@ -33,6 +35,8 @@ const DEFAULT_PRINT_SETTINGS: Required<Omit<PrintSettings, 'logo_url'>> & { logo
   font_size: 11,
   paper_width_mm: 58,
   left_offset_mm: 5,
+  font_weight: 600,
+  logo_size_mm: 40,
 };
 
 export type PrintOrderData = {
@@ -125,8 +129,10 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
     ? `<div class="block"><div class="lbl">SETOR</div><div>${escapeHtml(order.sector)}</div></div>`
     : '';
 
+  const logoMaxW = Math.max(20, Math.min(cfg.paper_width_mm ?? 58, cfg.logo_size_mm ?? 40));
+  const logoMaxH = Math.round(logoMaxW * 0.6);
   const logoHtml = (cfg.show_logo && cfg.logo_url)
-    ? `<div class="center"><img src="${escapeHtml(cfg.logo_url)}" style="max-width:40mm;max-height:20mm;object-fit:contain" /></div>`
+    ? `<div class="center" style="margin-bottom:2mm"><img src="${escapeHtml(cfg.logo_url)}" style="max-width:${logoMaxW}mm;max-height:${logoMaxH}mm;object-fit:contain;filter:contrast(1.4) brightness(0.85)" /></div>`
     : '';
 
   // Largura útil real do papel 58mm geralmente é ~48mm (a impressora reserva borda física)
@@ -144,6 +150,7 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
     max-width: ${printableWidth}mm;
     font-family: 'Courier New', monospace;
     font-size: ${cfg.font_size}px;
+    font-weight: ${cfg.font_weight ?? 600};
     line-height: 1.35;
     color: #000;
     padding: 2mm 0 6mm 0;
@@ -151,11 +158,14 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
     word-wrap: break-word;
     overflow-wrap: anywhere;
     word-break: break-word;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    text-rendering: geometricPrecision;
   }
   * { max-width: 100%; }
   .center { text-align: center; }
-  .bold { font-weight: 700; }
-  .big { font-size: ${cfg.font_size + 3}px; font-weight: 700; }
+  .bold { font-weight: 800; }
+  .big { font-size: ${cfg.font_size + 3}px; font-weight: 800; }
   .sep { border-top: 1px dashed #000; margin: 4px 0; }
   .row { display: flex; justify-content: space-between; gap: 4px; width: 100%; }
   .row span:last-child { white-space: nowrap; flex-shrink: 0; }
