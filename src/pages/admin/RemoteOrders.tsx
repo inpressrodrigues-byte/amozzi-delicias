@@ -18,6 +18,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
 import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode, FileSpreadsheet, Printer } from 'lucide-react';
 import { printOrderReceipt } from '@/lib/printOrder';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { logAdminAction } from '@/hooks/useAdminLog';
