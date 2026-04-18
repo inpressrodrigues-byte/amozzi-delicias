@@ -115,7 +115,7 @@ export const PrintSettingsCard = ({ value, onChange, logoUrl }: Props) => {
           </p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-3">
           <div>
             <Label>Tamanho da fonte (px)</Label>
             <Input
@@ -135,6 +135,19 @@ export const PrintSettingsCard = ({ value, onChange, logoUrl }: Props) => {
               value={value.paper_width_mm ?? 58}
               onChange={(e) => update({ paper_width_mm: Number(e.target.value) || 58 })}
             />
+          </div>
+          <div>
+            <Label>Margem esquerda (mm)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={30}
+              value={value.left_offset_mm ?? 5}
+              onChange={(e) => update({ left_offset_mm: Number(e.target.value) || 0 })}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Aumente se o texto está cortando no lado esquerdo.
+            </p>
           </div>
         </div>
 

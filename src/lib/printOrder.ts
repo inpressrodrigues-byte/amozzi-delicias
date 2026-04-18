@@ -15,6 +15,7 @@ export type PrintSettings = {
   show_notes?: boolean;
   font_size?: number;
   paper_width_mm?: number;
+  left_offset_mm?: number;
 };
 
 const DEFAULT_PRINT_SETTINGS: Required<Omit<PrintSettings, 'logo_url'>> & { logo_url: string | null } = {
@@ -31,6 +32,7 @@ const DEFAULT_PRINT_SETTINGS: Required<Omit<PrintSettings, 'logo_url'>> & { logo
   show_notes: true,
   font_size: 11,
   paper_width_mm: 58,
+  left_offset_mm: 5,
 };
 
 export type PrintOrderData = {
@@ -129,6 +131,7 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
 
   // Largura útil real do papel 58mm geralmente é ~48mm (a impressora reserva borda física)
   const printableWidth = Math.max(40, (cfg.paper_width_mm ?? 58) - 10);
+  const leftOffset = Math.max(0, cfg.left_offset_mm ?? 5);
 
   return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Pedido ${escapeHtml(order.customer_name)}</title>
@@ -144,7 +147,7 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
     line-height: 1.35;
     color: #000;
     padding: 2mm 0 6mm 0;
-    margin: 0 auto !important;
+    margin: 0 0 0 ${leftOffset}mm !important;
     word-wrap: break-word;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -164,7 +167,7 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
   @media print {
     @page { size: ${cfg.paper_width_mm}mm auto; margin: 0 !important; }
     html, body { margin: 0 !important; padding: 0 !important; }
-    body { padding: 1mm 0 4mm 0; margin: 0 auto !important; }
+    body { padding: 1mm 0 4mm 0; margin: 0 0 0 ${leftOffset}mm !important; }
   }
 </style></head>
 <body>
