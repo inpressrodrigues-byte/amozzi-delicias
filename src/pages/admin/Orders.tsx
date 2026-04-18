@@ -7,8 +7,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { toast } from 'sonner';
-import { Trash2, MapPin, Check } from 'lucide-react';
+import { Trash2, MapPin, Check, Printer } from 'lucide-react';
 import { logAdminAction } from '@/hooks/useAdminLog';
+import { printOrderReceipt } from '@/lib/printOrder';
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
