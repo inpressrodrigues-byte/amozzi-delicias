@@ -135,12 +135,16 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
   html, body { margin: 0; padding: 0; }
   body {
     width: ${cfg.paper_width_mm}mm;
+    max-width: ${cfg.paper_width_mm}mm;
     font-family: 'Courier New', monospace;
     font-size: ${cfg.font_size}px;
     line-height: 1.35;
     color: #000;
-    padding: 4mm 3mm 8mm;
+    padding: 2mm 1mm 6mm 1mm;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
+  * { max-width: 100%; }
   .center { text-align: center; }
   .bold { font-weight: 700; }
   .big { font-size: ${cfg.font_size + 3}px; font-weight: 700; }
@@ -151,7 +155,7 @@ export function buildReceiptHtml(order: PrintOrderData, settings?: PrintSettings
   .block { margin: 4px 0; }
   .badge { display: inline-block; padding: 2px 6px; border: 1px solid #000; font-weight: 700; font-size: ${cfg.font_size + 1}px; margin-top: 2px; }
   .pending { font-size: ${cfg.font_size + 2}px; font-weight: 700; }
-  @media print { body { padding: 2mm; } }
+  @media print { body { padding: 1mm 1mm 4mm 1mm; } }
 </style></head>
 <body>
   ${logoHtml}
