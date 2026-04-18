@@ -16,7 +16,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
 import { toast } from 'sonner';
-import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode, FileSpreadsheet } from 'lucide-react';
+import { Plus, Minus, Trash2, Filter, Search, History, Package, Settings2, MessageSquare, Info, Send, CheckCircle2, Clock, AlertCircle, Volume2, X, ChevronDown, Check, Copy, Share2, Pencil, QrCode, FileSpreadsheet, Printer } from 'lucide-react';
+import { printOrderReceipt } from '@/lib/printOrder';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { logAdminAction } from '@/hooks/useAdminLog';
@@ -579,6 +580,23 @@ const RemoteOrders = () => {
           </div>
         <div className="flex items-center gap-2 shrink-0">
             {getPaymentBadge(order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'), order)}
+            <button
+              onClick={() => printOrderReceipt({
+                source: 'remoto',
+                customer_name: order.customer_name,
+                customer_whatsapp: order.customer_whatsapp,
+                sector: order.sector,
+                notes: order.notes,
+                created_at: order.created_at,
+                items: items.map((it: any) => ({ name: it.name, quantity: Number(it.quantity) || 1, price: Number(it.price) || 0 })),
+                total: totalValue,
+                payment_status: order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'),
+              })}
+              title="Imprimir pedido (58mm)"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <Printer className="h-3.5 w-3.5" />
+            </button>
             {!showBillingControls && (
               <button onClick={() => { startEditOrder(order); /* switch to new tab handled by caller */ }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <Pencil className="h-3.5 w-3.5" />
