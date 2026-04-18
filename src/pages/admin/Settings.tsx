@@ -114,6 +114,8 @@ const Settings = () => {
       if (sh) setStoreHours(prev => ({ ...prev, ...sh }));
       const hm = (settings as any).hidden_admin_menus;
       if (Array.isArray(hm)) setHiddenMenus(hm);
+      const ps = (settings as any).print_settings;
+      if (ps) setPrintSettings((prev) => ({ ...prev, ...ps }));
     }
   }, [settings]);
 
