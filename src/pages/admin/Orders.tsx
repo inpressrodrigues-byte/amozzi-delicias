@@ -193,35 +193,10 @@ const Orders = () => {
                           payment_method: order.payment_method,
                           status: order.status,
                           tracking_code: order.tracking_code,
-                  <div className="mt-2 flex items-center justify-between">
-                    <p className="font-bold text-primary">Total: R$ {Number(order.total).toFixed(2)}</p>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Imprimir pedido (58mm)"
-                        onClick={() => printOrderReceipt({
-                          source: 'site',
-                          customer_name: order.customer_name,
-                          customer_whatsapp: order.customer_whatsapp,
-                          customer_address: order.customer_address,
-                          customer_cep: order.customer_cep,
-                          created_at: order.created_at,
-                          items: items.map((it: any) => ({ name: it.name, quantity: Number(it.quantity) || 1, price: Number(it.price) || 0 })),
-                          total: Number(order.total),
-                          delivery_fee: Number(order.delivery_fee || 0),
-                          payment_method: order.payment_method,
-                          status: order.status,
-                          tracking_code: order.tracking_code,
                         }, { ...((settings as any)?.print_settings || {}), logo_url: settings?.logo_url })}
                       >
                         <Printer className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteOrder(order.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
                       <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteOrder(order.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
