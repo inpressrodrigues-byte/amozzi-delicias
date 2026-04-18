@@ -62,6 +62,20 @@ const Settings = () => {
     closed_message: 'Estamos fechados no momento. Os pedidos serão separados no próximo horário de funcionamento.',
   });
   const [hiddenMenus, setHiddenMenus] = useState<string[]>([]);
+  const [printSettings, setPrintSettings] = useState<PrintSettings>({
+    auto_print_enabled: false,
+    header_title: 'AMOZI',
+    header_subtitle: 'Delícias no Pote',
+    footer_message: 'Obrigada pela preferência! 💕',
+    extra_info: '',
+    show_logo: false,
+    show_tracking_code: true,
+    show_whatsapp: true,
+    show_address: true,
+    show_notes: true,
+    font_size: 11,
+    paper_width_mm: 58,
+  });
 
   const { data: billingSettings } = useQuery({
     queryKey: ['billing-settings'],
