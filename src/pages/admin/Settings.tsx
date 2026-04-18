@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { Save, Plus, Trash2, QrCode, Clock, Eye } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { logAdminAction } from '@/hooks/useAdminLog';
+import { PrintSettingsCard } from '@/components/admin/PrintSettingsCard';
+import type { PrintSettings } from '@/lib/printOrder';
 
 interface DeliveryZone {
   name: string;
