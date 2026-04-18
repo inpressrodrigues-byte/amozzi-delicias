@@ -186,6 +186,12 @@ const Settings = () => {
       </div>
 
       <div className="grid gap-6">
+        <PrintSettingsCard
+          value={printSettings}
+          onChange={setPrintSettings}
+          logoUrl={settings?.logo_url}
+        />
+
         <Card>
           <CardHeader><CardTitle>Logo</CardTitle></CardHeader>
           <CardContent className="space-y-3">
