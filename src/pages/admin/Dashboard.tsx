@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProfitAIChat from '@/components/admin/ProfitAIChat';
+import SalesProductionCard from '@/components/admin/SalesProductionCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -349,6 +350,9 @@ const Dashboard = () => {
           </Card>
         ))}
       </div>
+
+      {/* Bolos vendidos & produzidos */}
+      <SalesProductionCard />
 
       {/* Profit + Financial Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">

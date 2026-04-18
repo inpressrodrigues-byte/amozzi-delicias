@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import NutritionForm from '@/components/admin/NutritionForm';
+import ProductionBatchManager from '@/components/admin/ProductionBatchManager';
 import { logAdminAction } from '@/hooks/useAdminLog';
 import { useProductNutrition, useSaveNutrition, defaultNutrition, type NutritionData } from '@/hooks/useProductNutrition';
 import { useProductCategories } from '@/hooks/useProductCategories';
@@ -213,6 +214,14 @@ const Products = () => {
                 <Label>Disponível</Label>
               </div>
               <NutritionForm nutrition={nutritionForm} onChange={setNutritionForm} />
+              {editing?.id && (
+                <ProductionBatchManager productId={editing.id} productName={editing.name} />
+              )}
+              {!editing && (
+                <p className="text-xs text-muted-foreground italic">
+                  💡 Salve o produto primeiro para registrar lotes de produção e validade.
+                </p>
+              )}
               {/* Tags */}
               <div>
                 <Label className="mb-2 block">Tags do Produto</Label>
