@@ -593,7 +593,7 @@ const RemoteOrders = () => {
                 items: items.map((it: any) => ({ name: it.name, quantity: Number(it.quantity) || 1, price: Number(it.price) || 0 })),
                 total: totalValue,
                 payment_status: order.payment_status || (order.paid ? 'pago_dinheiro' : 'nao_pago'),
-              })}
+              }, { ...((siteSettings as any)?.print_settings || {}), logo_url: siteSettings?.logo_url })}
               title="Imprimir pedido (58mm)"
               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
