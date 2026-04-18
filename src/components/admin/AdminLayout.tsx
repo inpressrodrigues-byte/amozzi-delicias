@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useAutoPrintOrders } from '@/hooks/useAutoPrintOrders';
+import { useAutoPrintRemoteOrders } from '@/hooks/useAutoPrintRemoteOrders';
 
 export const allNavItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -36,6 +37,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   useAutoPrintOrders();
+  useAutoPrintRemoteOrders();
 
   if (loading) {
     return (
