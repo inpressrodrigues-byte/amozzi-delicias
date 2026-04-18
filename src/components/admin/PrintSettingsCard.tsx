@@ -151,6 +151,39 @@ export const PrintSettingsCard = ({ value, onChange, logoUrl }: Props) => {
           </div>
         </div>
 
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <Label>Espessura da fonte (escuridão)</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={value.font_weight ?? 600}
+              onChange={(e) => update({ font_weight: Number(e.target.value) })}
+            >
+              <option value={400}>Normal (claro)</option>
+              <option value={500}>Médio</option>
+              <option value={600}>Semi-negrito (recomendado)</option>
+              <option value={700}>Negrito</option>
+              <option value={800}>Extra-negrito (mais escuro)</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Aumente se a impressão sair muito apagada.
+            </p>
+          </div>
+          <div>
+            <Label>Tamanho da logo (mm)</Label>
+            <Input
+              type="number"
+              min={20}
+              max={56}
+              value={value.logo_size_mm ?? 40}
+              onChange={(e) => update({ logo_size_mm: Number(e.target.value) || 40 })}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Largura máxima da logo. Padrão: 40mm.
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label className="text-sm">Mostrar no cupom</Label>
           <div className="grid gap-2 md:grid-cols-2">
