@@ -433,6 +433,50 @@ export type Database = {
           },
         ]
       }
+      production_batches: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          manufactured_at: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          shelf_life_days: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          manufactured_at?: string
+          notes?: string | null
+          product_id: string
+          quantity?: number
+          shelf_life_days?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          manufactured_at?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          shelf_life_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           available: boolean
