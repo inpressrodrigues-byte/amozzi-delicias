@@ -175,9 +175,32 @@ const Orders = () => {
                   {deliveryFee > 0 && <p className="text-sm text-muted-foreground mt-1">🚚 Taxa de entrega: R$ {deliveryFee.toFixed(2)}</p>}
                   <div className="mt-2 flex items-center justify-between">
                     <p className="font-bold text-primary">Total: R$ {Number(order.total).toFixed(2)}</p>
-                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteOrder(order.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Imprimir pedido (58mm)"
+                        onClick={() => printOrderReceipt({
+                          source: 'site',
+                          customer_name: order.customer_name,
+                          customer_whatsapp: order.customer_whatsapp,
+                          customer_address: order.customer_address,
+                          customer_cep: order.customer_cep,
+                          created_at: order.created_at,
+                          items: items.map((it: any) => ({ name: it.name, quantity: Number(it.quantity) || 1, price: Number(it.price) || 0 })),
+                          total: Number(order.total),
+                          delivery_fee: Number(order.delivery_fee || 0),
+                          payment_method: order.payment_method,
+                          status: order.status,
+                          tracking_code: order.tracking_code,
+                        })}
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteOrder(order.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{new Date(order.created_at).toLocaleString('pt-BR')}</p>
                 </CardContent>
